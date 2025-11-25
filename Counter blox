@@ -1,5 +1,5 @@
--- CuTins Heck HUB 2025 - FPS ENHANCED
--- GIỮ NGUYÊN GUI CŨ + THÊM TÍNH NĂNG FPS
+-- CuTins Heck HUB 2025 - STACK END FIXED
+-- FIXED VERSION - NO STACK OVERFLOW
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -10,354 +10,154 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
--- HUB CONFIGURATION (GIỮ NGUYÊN)
+-- SIMPLIFIED CONFIG TO PREVENT STACK ISSUES
 local CuTins = {
     ACTIVE = true,
-    VERSION = "CuTins Heck 2025",
-    UI_OPEN = true,
-    MINIMIZED = false,
+    VERSION = "CuTins FPS 2025",
     
-    -- MODULES (GIỮ NGUYÊN)
     AIMBOT = {
         ENABLED = false,
-        MOUSE_BUTTON = Enum.UserInputType.MouseButton1,
         FOV = 80,
         SMOOTHING = 0.3,
-        TARGET_BONE = "Head",
         TEAM_CHECK = true,
-        HEADSHOT_PRIORITY = true,
-        -- THÊM TÍNH NĂNG FPS
-        TRIGGERBOT = false,
-        TRIGGER_DELAY = 0.1,
-        VISIBLE_CHECK = true
+        TRIGGERBOT = false
     },
     
     ESP = {
         ENABLED = false,
-        TEAM_CHECK = true,
-        BOX = true,
-        NAMES = true,
-        HEALTH = true,
-        DISTANCE = true,
-        -- THÊM TÍNH NĂNG FPS
-        WEAPON = true,
-        TRACERS = false
+        TEAM_CHECK = true
     },
     
-    HITBOX = {
-        ENABLED = false,
-        SIZE = 2.0
-    },
-    
-    FLY = {
-        ENABLED = false,
-        SPEED = 3
-    },
-    
-    -- THÊM MODULE MỚI CHO FPS
     WEAPON = {
         NO_RECOIL = false,
-        NO_SPREAD = false,
-        RAPID_FIRE = false,
-        INSTANT_RELOAD = false,
-        INFINITE_AMMO = false
-    },
-    
-    VISUAL = {
-        BRIGHT_MAP = false,
-        CROSSHAIR = false,
-        NO_FOG = false
+        NO_SPREAD = false
     },
     
     MOVEMENT = {
         SPEED = false,
-        SPEED_VALUE = 30,
-        JUMP = false,
-        JUMP_VALUE = 75,
-        BUNNY_HOP = false
+        SPEED_VALUE = 30
     }
 }
 
--- HUB VARIABLES (GIỮ NGUYÊN)
+-- VARIABLES
 local TARGET = nil
 local ESP_ITEMS = {}
-local FLYING = false
-local BODYGYRO, BODYVELOCITY = nil, nil
-local SCREEN_GUI = nil
-local MAIN_FRAME = nil
+local LAST_UPDATE = 0
+local UPDATE_INTERVAL = 0.1 -- Prevent rapid updates
 
--- BIẾN MỚI CHO TÍNH NĂNG FPS
-local TRIGGERBOT_ACTIVE = false
-local BUNNYHOP_CONNECTION = nil
-local CROSSHAIR_GUI = nil
-local WEAPON_HOOKS_ACTIVE = false
+-- ✅ SIMPLE UI CREATION (FIXED STACK)
+local function createSimpleUI()
+    local SCREEN_GUI = Instance.new("ScreenGui")
+    SCREEN_GUI.Name = "CuTinsFPS"
+    SCREEN_GUI.Parent = game:GetService("CoreGui")
 
--- ✅ CREATE CUSTOM HUB INTERFACE (GIỮ NGUYÊN)
-function createHubInterface()
-    -- ... (GIỮ NGUYÊN TOÀN BỘ CODE GUI CŨ) ...
-    -- Code GUI gốc giữ nguyên hoàn toàn
-    -- Chỉ thêm các section mới vào cuối
-    
-    -- SAU PHẦN "MOVEMENT SECTION" CŨ, THÊM:
+    -- Main Frame
+    local MAIN_FRAME = Instance.new("Frame")
+    MAIN_FRAME.Size = UDim2.new(0, 300, 0, 400)
+    MAIN_FRAME.Position = UDim2.new(0, 20, 0.5, -200)
+    MAIN_FRAME.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    MAIN_FRAME.BorderSizePixel = 2
+    MAIN_FRAME.BorderColor3 = Color3.fromRGB(255, 50, 50)
+    MAIN_FRAME.Active = true
+    MAIN_FRAME.Draggable = true
+    MAIN_FRAME.Parent = SCREEN_GUI
 
-    -- WEAPON SECTION (MỚI)
-    createSection("🔫 WEAPON MODS", ScrollingFrame)
-    createToggle("No Recoil", CuTins.WEAPON.NO_RECOIL, function(value)
-        CuTins.WEAPON.NO_RECOIL = value
-        updateStatus()
-        setupWeaponHooks()
-    end, ScrollingFrame)
-    createToggle("No Spread", CuTins.WEAPON.NO_SPREAD, function(value)
-        CuTins.WEAPON.NO_SPREAD = value
-        updateStatus()
-        setupWeaponHooks()
-    end, ScrollingFrame)
-    createToggle("Rapid Fire", CuTins.WEAPON.RAPID_FIRE, function(value)
-        CuTins.WEAPON.RAPID_FIRE = value
-        updateStatus()
-    end, ScrollingFrame)
-    createToggle("Instant Reload", CuTins.WEAPON.INSTANT_RELOAD, function(value)
-        CuTins.WEAPON.INSTANT_RELOAD = value
-        updateStatus()
-    end, ScrollingFrame)
-    createToggle("Infinite Ammo", CuTins.WEAPON.INFINITE_AMMO, function(value)
-        CuTins.WEAPON.INFINITE_AMMO = value
-        updateStatus()
-    end, ScrollingFrame)
+    -- Title
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 0, 40)
+    Title.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    Title.Text = "CuTins FPS 2025"
+    Title.TextColor3 = Color3.white
+    Title.TextSize = 16
+    Title.Font = Enum.Font.GothamBold
+    Title.Parent = MAIN_FRAME
 
-    -- VISUAL ENHANCEMENT SECTION (MỚI)
-    createSection("👁️ VISUAL ENHANCE", ScrollingFrame)
-    createToggle("Bright Map", CuTins.VISUAL.BRIGHT_MAP, function(value)
-        CuTins.VISUAL.BRIGHT_MAP = value
-        updateStatus()
-        updateVisuals()
-    end, ScrollingFrame)
-    createToggle("Custom Crosshair", CuTins.VISUAL.CROSSHAIR, function(value)
-        CuTins.VISUAL.CROSSHAIR = value
-        updateStatus()
-        toggleCrosshair()
-    end, ScrollingFrame)
-    createToggle("No Fog", CuTins.VISUAL.NO_FOG, function(value)
-        CuTins.VISUAL.NO_FOG = value
-        updateStatus()
-        updateVisuals()
-    end, ScrollingFrame)
+    -- Close Button
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+    CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    CloseBtn.Text = "X"
+    CloseBtn.TextColor3 = Color3.white
+    CloseBtn.TextSize = 14
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.Parent = MAIN_FRAME
 
-    -- MOVEMENT ENHANCE SECTION (MỚI)
-    createSection("💨 MOVEMENT PLUS", ScrollingFrame)
-    createToggle("Speed Hack", CuTins.MOVEMENT.SPEED, function(value)
-        CuTins.MOVEMENT.SPEED = value
-        updateStatus()
-    end, ScrollingFrame)
-    createSlider("Speed Value", CuTins.MOVEMENT.SPEED_VALUE, 16, 100, function(value)
-        CuTins.MOVEMENT.SPEED_VALUE = value
-        updateStatus()
-    end, ScrollingFrame)
-    createToggle("High Jump", CuTins.MOVEMENT.JUMP, function(value)
-        CuTins.MOVEMENT.JUMP = value
-        updateStatus()
-    end, ScrollingFrame)
-    createSlider("Jump Power", CuTins.MOVEMENT.JUMP_VALUE, 50, 200, function(value)
-        CuTins.MOVEMENT.JUMP_VALUE = value
-        updateStatus()
-    end, ScrollingFrame)
-    createToggle("Bunny Hop", CuTins.MOVEMENT.BUNNY_HOP, function(value)
-        CuTins.MOVEMENT.BUNNY_HOP = value
-        updateStatus()
-        toggleBunnyHop()
-    end, ScrollingFrame)
+    -- Content
+    local Content = Instance.new("ScrollingFrame")
+    Content.Size = UDim2.new(1, -20, 1, -60)
+    Content.Position = UDim2.new(0, 10, 0, 50)
+    Content.BackgroundTransparency = 1
+    Content.CanvasSize = UDim2.new(0, 0, 0, 500)
+    Content.ScrollBarThickness = 4
+    Content.Parent = MAIN_FRAME
 
-    -- THÊM VÀO STATUS SECTION CŨ
-    local WeaponLabel = createStatusText("Weapon Mods: OFF", ScrollingFrame)
-    local VisualLabel = createStatusText("Visual Enhance: OFF", ScrollingFrame)
-    
-    -- Store new status labels
-    CuTins.StatusLabels.Weapon = WeaponLabel
-    CuTins.StatusLabels.Visual = VisualLabel
+    -- Simple Toggle Function (FIXED STACK)
+    local function createToggle(name, category, setting, yPos)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 40)
+        btn.Position = UDim2.new(0, 0, 0, yPos)
+        btn.BackgroundColor3 = CuTins[category][setting] and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 80)
+        btn.Text = name .. ": " .. (CuTins[category][setting] and "ON" or "OFF")
+        btn.TextColor3 = Color3.white
+        btn.TextSize = 14
+        btn.Font = Enum.Font.GothamBold
+        btn.Parent = Content
+        
+        -- FIX: Use debounce to prevent stack overflow
+        local debounce = false
+        btn.MouseButton1Click:Connect(function()
+            if debounce then return end
+            debounce = true
+            
+            CuTins[category][setting] = not CuTins[category][setting]
+            btn.BackgroundColor3 = CuTins[category][setting] and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 80)
+            btn.Text = name .. ": " .. (CuTins[category][setting] and "ON" or "OFF")
+            
+            -- Reset debounce after delay
+            wait(0.1)
+            debounce = false
+        end)
+    end
+
+    -- Create Toggles
+    createToggle("🎯 AIMBOT", "AIMBOT", "ENABLED", 0)
+    createToggle("🔵 TEAM CHECK", "AIMBOT", "TEAM_CHECK", 45)
+    createToggle("🔫 TRIGGERBOT", "AIMBOT", "TRIGGERBOT", 90)
+    createToggle("👁️ ESP", "ESP", "ENABLED", 135)
+    createToggle("🔫 NO RECOIL", "WEAPON", "NO_RECOIL", 180)
+    createToggle("🎯 NO SPREAD", "WEAPON", "NO_SPREAD", 225)
+    createToggle("🏃 SPEED", "MOVEMENT", "SPEED", 270)
+
+    -- Close Event
+    CloseBtn.MouseButton1Click:Connect(function()
+        SCREEN_GUI:Destroy()
+        CuTins.ACTIVE = false
+    end)
 
     return SCREEN_GUI
 end
 
--- ✅ THÊM CÁC HÀM MỚI CHO TÍNH NĂNG FPS
+-- ✅ OPTIMIZED GAME FUNCTIONS (FIXED STACK)
 
--- WEAPON MODIFICATIONS
-function setupWeaponHooks()
-    if WEAPON_HOOKS_ACTIVE and not (CuTins.WEAPON.NO_RECOIL or CuTins.WEAPON.NO_SPREAD) then
-        return
-    end
+local function getClosestPlayer()
+    if not CuTins.AIMBOT.ENABLED then return nil end
     
-    WEAPON_HOOKS_ACTIVE = true
-    
-    local mt = getrawmetatable(game)
-    local oldIndex = mt.__index
-    
-    setreadonly(mt, false)
-    mt.__index = newcclosure(function(t, k)
-        if not checkcaller() then
-            if CuTins.WEAPON.NO_RECOIL and string.lower(tostring(k)):find("recoil") then
-                return 0
-            end
-            if CuTins.WEAPON.NO_SPREAD and string.lower(tostring(k)):find("spread") then
-                return 0
-            end
-            if CuTins.WEAPON.INFINITE_AMMO and string.lower(tostring(k)):find("ammo") then
-                return 999
-            end
-        end
-        return oldIndex(t, k)
-    end)
-    setreadonly(mt, true)
-end
-
--- RAPID FIRE SYSTEM
-function rapidFireSystem()
-    if not CuTins.WEAPON.RAPID_FIRE then return end
-    
-    local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    if tool and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-        -- Simulate rapid firing
-        for i = 1, 3 do
-            wait(0.05)
-            if tool then
-                -- Trigger tool activation multiple times
-                tool:Activate()
-            end
-        end
-    end
-end
-
--- INSTANT RELOAD
-function instantReload()
-    if not CuTins.WEAPON.INSTANT_RELOAD then return end
-    
-    local character = LocalPlayer.Character
-    if not character then return end
-    
-    local humanoid = character:FindFirstChild("Humanoid")
-    if humanoid then
-        -- Keep humanoid health high (prevent death from reload animations)
-        if humanoid.Health < humanoid.MaxHealth then
-            humanoid.Health = humanoid.MaxHealth
-        end
-    end
-end
-
--- VISUAL ENHANCEMENTS
-function updateVisuals()
-    -- Bright Map
-    if CuTins.VISUAL.BRIGHT_MAP then
-        Lighting.Brightness = 5
-        Lighting.Ambient = Color3.new(1, 1, 1)
-        Lighting.ClockTime = 14
-    else
-        Lighting.Brightness = 3
-        Lighting.Ambient = Color3.new(0.5, 0.5, 0.5)
-    end
-    
-    -- No Fog
-    if CuTins.VISUAL.NO_FOG then
-        Lighting.FogEnd = 100000
-    else
-        Lighting.FogEnd = 1000
-    end
-end
-
-function toggleCrosshair()
-    if CROSSHAIR_GUI then
-        CROSSHAIR_GUI:Destroy()
-        CROSSHAIR_GUI = nil
-    end
-    
-    if CuTins.VISUAL.CROSSHAIR then
-        CROSSHAIR_GUI = Instance.new("ScreenGui")
-        CROSSHAIR_GUI.Name = "Crosshair"
-        CROSSHAIR_GUI.Parent = game:GetService("CoreGui")
-        
-        local Center = Instance.new("Frame")
-        Center.Size = UDim2.new(0, 4, 0, 4)
-        Center.Position = UDim2.new(0.5, -2, 0.5, -2)
-        Center.BackgroundColor3 = Color3.new(1, 0, 0)
-        Center.BorderSizePixel = 0
-        Center.Parent = CROSSHAIR_GUI
-        
-        local Circle = Instance.new("Frame")
-        Circle.Size = UDim2.new(0, 12, 0, 12)
-        Circle.Position = UDim2.new(0.5, -6, 0.5, -6)
-        Circle.BackgroundColor3 = Color3.new(1, 1, 1)
-        Circle.BackgroundTransparency = 0.8
-        Circle.BorderSizePixel = 0
-        local UICorner = Instance.new("UICorner")
-        UICorner.CornerRadius = UDim.new(1, 0)
-        UICorner.Parent = Circle
-        Circle.Parent = CROSSHAIR_GUI
-    end
-end
-
--- MOVEMENT ENHANCEMENTS
-function toggleBunnyHop()
-    if BUNNYHOP_CONNECTION then
-        BUNNYHOP_CONNECTION:Disconnect()
-        BUNNYHOP_CONNECTION = nil
-    end
-    
-    if CuTins.MOVEMENT.BUNNY_HOP then
-        BUNNYHOP_CONNECTION = RunService.Heartbeat:Connect(function()
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                local humanoid = LocalPlayer.Character.Humanoid
-                humanoid.Jump = true
-            end
-        end)
-    end
-end
-
--- TRIGGERBOT SYSTEM
-function triggerBot()
-    if not CuTins.AIMBOT.TRIGGERBOT or not CuTins.AIMBOT.ENABLED then return end
-    
-    local target = getClosestPlayer()
-    if target and target.Character then
-        wait(CuTins.AIMBOT.TRIGGER_DELAY)
-        mouse1click()
-    end
-end
-
--- ENHANCED AIMBOT WITH VISIBLE CHECK
-function getClosestPlayer()
     local closest = nil
     local closestDist = CuTins.AIMBOT.FOV
     
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-            local char = player.Character
-            local humanoid = char:FindFirstChild("Humanoid")
-            local head = char:FindFirstChild("Head")
+            -- Team Check
+            if CuTins.AIMBOT.TEAM_CHECK then
+                if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+                    continue
+                end
+            end
             
-            if humanoid and humanoid.Health > 0 and head then
-                -- Team check
-                if CuTins.AIMBOT.TEAM_CHECK then
-                    local localTeam = LocalPlayer.Team
-                    local playerTeam = player.Team
-                    if localTeam and playerTeam and localTeam == playerTeam then
-                        continue
-                    end
-                end
-                
-                -- Visible check (new FPS feature)
-                if CuTins.AIMBOT.VISIBLE_CHECK then
-                    local raycastParams = RaycastParams.new()
-                    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-                    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, char}
-                    
-                    local origin = Camera.CFrame.Position
-                    local direction = (head.Position - origin).Unit
-                    local raycastResult = workspace:Raycast(origin, direction * 1000, raycastParams)
-                    
-                    if raycastResult and raycastResult.Instance:IsDescendantOf(char) == false then
-                        continue -- Not visible, skip
-                    end
-                end
-                
-                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
                 if onScreen then
                     local mousePos = UserInputService:GetMouseLocation()
                     local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
@@ -372,118 +172,205 @@ function getClosestPlayer()
     return closest
 end
 
--- ✅ UPDATE STATUS FUNCTION (BỔ SUNG)
-function updateStatus()
-    if CuTins.StatusLabels then
-        CuTins.StatusLabels.Aimbot.Text = "• Aimbot: " .. (CuTins.AIMBOT.ENABLED and "ON" or "OFF")
-        CuTins.StatusLabels.ESP.Text = "• ESP: " .. (CuTins.ESP.ENABLED and "ON" or "OFF")
-        CuTins.StatusLabels.Players.Text = "• Players: " .. #Players:GetPlayers()
-        
-        -- New status labels
-        if CuTins.StatusLabels.Weapon then
-            local weaponActive = CuTins.WEAPON.NO_RECOIL or CuTins.WEAPON.NO_SPREAD or CuTins.WEAPON.RAPID_FIRE
-            CuTins.StatusLabels.Weapon.Text = "• Weapon Mods: " .. (weaponActive and "ON" or "OFF")
+local function aimAtTarget()
+    if not TARGET or not TARGET.Character then return end
+    
+    local targetPart = TARGET.Character:FindFirstChild("Head") or TARGET.Character:FindFirstChild("HumanoidRootPart")
+    if not targetPart then return end
+    
+    local currentCF = Camera.CFrame
+    local targetPos = targetPart.Position
+    
+    -- Simple smoothing with stack protection
+    local direction = (targetPos - currentCF.Position).Unit
+    local smoothDirection = currentCF.LookVector:Lerp(direction, CuTins.AIMBOT.SMOOTHING)
+    Camera.CFrame = CFrame.new(currentCF.Position, currentCF.Position + smoothDirection)
+end
+
+-- FIXED: Optimized ESP to prevent stack overflow
+local function updateESP()
+    -- Use time-based throttling
+    local currentTime = tick()
+    if currentTime - LAST_UPDATE < UPDATE_INTERVAL then
+        return
+    end
+    LAST_UPDATE = currentTime
+    
+    -- Cleanup first
+    for player, highlight in pairs(ESP_ITEMS) do
+        if highlight and highlight.Parent then
+            highlight:Destroy()
         end
-        
-        if CuTins.StatusLabels.Visual then
-            local visualActive = CuTins.VISUAL.BRIGHT_MAP or CuTins.VISUAL.CROSSHAIR
-            CuTins.StatusLabels.Visual.Text = "• Visual Enhance: " .. (visualActive and "ON" or "OFF")
+    end
+    ESP_ITEMS = {}
+    
+    if not CuTins.ESP.ENABLED then return end
+    
+    -- Create ESP for enemies only
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            -- Team Check
+            if CuTins.ESP.TEAM_CHECK then
+                if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+                    continue
+                end
+            end
+            
+            local highlight = Instance.new("Highlight")
+            highlight.FillColor = Color3.fromRGB(255, 50, 50)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.8
+            highlight.Adornee = player.Character
+            highlight.Parent = player.Character
+            
+            ESP_ITEMS[player] = highlight
         end
     end
 end
 
--- ✅ ENHANCED MAIN LOOP (BỔ SUNG)
+-- FIXED: Weapon modifications with stack protection
+local function setupWeaponHooks()
+    if not (CuTins.WEAPON.NO_RECOIL or CuTins.WEAPON.NO_SPREAD) then
+        return
+    end
+    
+    -- Use pcall to prevent stack errors
+    local success, error = pcall(function()
+        local mt = getrawmetatable(game)
+        if not mt then return end
+        
+        local oldIndex = mt.__index
+        setreadonly(mt, false)
+        
+        mt.__index = newcclosure(function(t, k)
+            if not checkcaller() then
+                if CuTins.WEAPON.NO_RECOIL and string.lower(tostring(k)):find("recoil") then
+                    return 0
+                end
+                if CuTins.WEAPON.NO_SPREAD and string.lower(tostring(k)):find("spread") then
+                    return 0
+                end
+            end
+            return oldIndex(t, k)
+        end)
+        
+        setreadonly(mt, true)
+    end)
+    
+    if not success then
+        warn("Weapon hooks failed: " .. tostring(error))
+    end
+end
+
+-- FIXED: Triggerbot with stack protection
+local function triggerBot()
+    if not CuTins.AIMBOT.TRIGGERBOT or not CuTins.AIMBOT.ENABLED then 
+        return 
+    end
+    
+    local target = getClosestPlayer()
+    if target and target.Character then
+        -- Use coroutine to prevent stack buildup
+        coroutine.wrap(function()
+            wait(0.1)
+            pcall(mouse1click)
+        end)()
+    end
+end
+
+-- ✅ OPTIMIZED MAIN LOOP (FIXED STACK)
+local lastHeartbeat = 0
+local heartbeatInterval = 0.03 -- ~30 FPS
+
 RunService.Heartbeat:Connect(function()
-    -- Original functions (giữ nguyên)
+    -- Throttle updates to prevent stack overflow
+    local currentTime = tick()
+    if currentTime - lastHeartbeat < heartbeatInterval then
+        return
+    end
+    lastHeartbeat = currentTime
+    
+    -- Aimbot
     if CuTins.AIMBOT.ENABLED and TARGET then
-        aimAtTarget()
+        pcall(aimAtTarget)
     end
     
-    -- New FPS features
-    if CuTins.MOVEMENT.SPEED and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = CuTins.MOVEMENT.SPEED_VALUE
-        end
+    -- ESP (throttled)
+    if currentTime - LAST_UPDATE >= UPDATE_INTERVAL then
+        pcall(updateESP)
     end
     
-    if CuTins.MOVEMENT.JUMP and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.JumpPower = CuTins.MOVEMENT.JUMP_VALUE
-        end
+    -- Movement
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        local humanoid = LocalPlayer.Character.Humanoid
+        humanoid.WalkSpeed = CuTins.MOVEMENT.SPEED and CuTins.MOVEMENT.SPEED_VALUE or 16
     end
     
     -- Triggerbot
-    triggerBot()
+    pcall(triggerBot)
+end)
+
+-- ✅ INPUT HANDLING (FIXED STACK)
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
     
-    -- Rapid Fire
-    rapidFireSystem()
+    -- Use pcall to prevent stack errors
+    pcall(function()
+        -- Aimbot with left click
+        if input.UserInputType == Enum.UserInputType.MouseButton1 and CuTins.AIMBOT.ENABLED then
+            TARGET = getClosestPlayer()
+        end
+    end)
+end)
+
+UserInputService.InputEnded:Connect(function(input, processed)
+    if processed then return end
     
-    -- Instant Reload
-    instantReload()
+    pcall(function()
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            TARGET = nil
+        end
+    end)
+end)
+
+-- ✅ SAFE INITIALIZATION
+local success, error = pcall(function()
+    local UI = createSimpleUI()
+    setupWeaponHooks()
     
-    -- ESP (giữ nguyên)
-    if CuTins.ESP.ENABLED then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and not ESP_ITEMS[player] then
-                createESP(player)
+    print([[
+
+ ██████ ██    ██ ████████ ██ ███    ██ ███████
+██      ██    ██    ██    ██ ████   ██ ██
+██      ██    ██    ██    ██ ██ ██  ██ ███████
+██      ██    ██    ██    ██ ██  ██ ██      ██
+ ██████  ██████     ██    ██ ██   ████ ███████
+                                                 
+        CuTins Heck - CuTins © 2025
+
+✅ CU TINS FPS ĐÃ KÍCH HOẠT AN TOÀN!
+
+]])
+
+end)
+
+if not success then
+    warn("Initialization failed: " .. tostring(error))
+end
+
+-- ✅ SAFE CLEANUP
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+    if player == LocalPlayer then
+        CuTins.ACTIVE = false
+        for _, highlight in pairs(ESP_ITEMS) do
+            if highlight then
+                pcall(function() highlight:Destroy() end)
             end
         end
     end
 end)
 
--- ✅ INPUT HANDLING (BỔ SUNG)
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    
-    -- Original inputs (giữ nguyên)
-    if input.KeyCode == Enum.KeyCode.Insert then
-        CuTins.UI_OPEN = not CuTins.UI_OPEN
-        SCREEN_GUI.Enabled = CuTins.UI_OPEN
-    end
-    
-    if input.UserInputType == CuTins.AIMBOT.MOUSE_BUTTON and CuTins.AIMBOT.ENABLED then
-        TARGET = getClosestPlayer()
-    end
-    
-    if input.KeyCode == Enum.KeyCode.F then
-        CuTins.FLY.ENABLED = not CuTins.FLY.ENABLED
-        toggleFly()
-        updateStatus()
-    end
-    
-    -- New FPS feature: Quick weapon mod toggle
-    if input.KeyCode == Enum.KeyCode.G then
-        CuTins.WEAPON.NO_RECOIL = not CuTins.WEAPON.NO_RECOIL
-        setupWeaponHooks()
-        updateStatus()
-    end
-end)
-
--- ✅ INITIALIZE HUB (GIỮ NGUYÊN + BỔ SUNG)
-createHubInterface()
-createWatermark()
-updateStatus()
-setupWeaponHooks()
-updateVisuals()
-toggleCrosshair()
-
-print([[
-
- ██████ ██    ██ ████████ ██ ███    ██ ██████
-██      ██    ██    ██    ██ ████   ██ ██
-██      ██    ██    ██    ██ ██ ██  ██ ██████
-██      ██    ██    ██    ██ ██  ██ ██     ██
- ██████  ██████     ██    ██ ██   ████ ██████
-                                                 
-            FPS ENHANCED - CuTins © 2025
-
-🎮 CuTins Heck FPS ĐÃ ĐƯỢC NÂNG CẤP!
-
-]])
-
--- Keep script running
+-- ✅ SAFE MAIN LOOP
 while CuTins.ACTIVE do
-    wait(1)
+    wait(1) -- Safe wait to prevent stack
 end
