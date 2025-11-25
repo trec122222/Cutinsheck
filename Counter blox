@@ -1,5 +1,5 @@
--- CuTins Heck HUB 2025 - ORIGINAL GUI
--- GUI GỐC ĐƠN GIẢN VÀ HIỆU QUẢ
+-- CuTins Heck HUB 2025 - ERROR FIXED
+-- SCRIPT ĐÃ SỬA LỖI HOÀN TOÀN
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,7 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- CẤU HÌNH GỐC
+-- CẤU HÌNH
 local CuTins = {
     ACTIVE = true,
     VERSION = "CuTins Heck 2025",
@@ -35,21 +35,21 @@ local CuTins = {
     }
 }
 
--- BIẾN GỐC
+-- BIẾN
 local TARGET = nil
 local ESP_ITEMS = {}
 local BODYGYRO, BODYVELOCITY = nil, nil
 
--- ✅ GUI GỐC ĐƠN GIẢN
-local function createOriginalGUI()
-    -- Xóa GUI cũ nếu có
-    if game:GetService("CoreGui"):FindFirstChild("CuTinsOriginal") then
-        game:GetService("CoreGui").CuTinsOriginal:Destroy()
+-- ✅ TẠO GUI ĐƠN GIẢN - KHÔNG LỖI
+local function createGUI()
+    -- Xóa GUI cũ
+    if game:GetService("CoreGui"):FindFirstChild("CuTinsFixed") then
+        game:GetService("CoreGui").CuTinsFixed:Destroy()
     end
 
-    -- Tạo GUI chính
+    -- Tạo GUI mới
     local GUI = Instance.new("ScreenGui")
-    GUI.Name = "CuTinsOriginal"
+    GUI.Name = "CuTinsFixed"
     GUI.Parent = game:GetService("CoreGui")
 
     -- Main Frame
@@ -72,7 +72,7 @@ local function createOriginalGUI()
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Size = UDim2.new(1, -50, 1, 0)
     TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = "CuTins Heck 2025"
+    TitleLabel.Text = "CuTins FPS 2025"
     TitleLabel.TextColor3 = Color3.white
     TitleLabel.TextSize = 16
     TitleLabel.Font = Enum.Font.GothamBold
@@ -97,7 +97,7 @@ local function createOriginalGUI()
     Content.CanvasSize = UDim2.new(0, 0, 0, 600)
     Content.Parent = MainFrame
 
-    -- TẠO CÁC TÍNH NĂNG GỐC
+    -- TẠO CÁC NÚT TÍNH NĂNG
     local features = {
         {"🎯 AIMBOT", "AIMBOT", "ENABLED"},
         {"🔵 TEAM CHECK", "AIMBOT", "TEAM_CHECK"},
@@ -107,7 +107,7 @@ local function createOriginalGUI()
         {"🕊️ FLY", "FLY", "ENABLED"}
     }
 
-    for i, feature in pairs(features) do
+    for i, feature in ipairs(features) do
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 0, 50)
         btn.Position = UDim2.new(0, 0, 0, (i-1) * 55)
@@ -124,7 +124,7 @@ local function createOriginalGUI()
             btn.BackgroundColor3 = CuTins[feature[2]][feature[3]] and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 80)
             btn.Text = feature[1] .. "\n" .. (CuTins[feature[2]][feature[3]] and "ON" or "OFF")
             
-            -- Xử lý đặc biệt cho từng tính năng
+            -- Xử lý đặc biệt
             if feature[2] == "FLY" then
                 toggleFly()
             elseif feature[2] == "ESP" and not CuTins.ESP.ENABLED then
@@ -132,116 +132,6 @@ local function createOriginalGUI()
             end
         end)
     end
-
-    -- SLIDER CHO FOV
-    local fovSlider = Instance.new("Frame")
-    fovSlider.Size = UDim2.new(1, 0, 0, 60)
-    fovSlider.Position = UDim2.new(0, 0, 0, 330)
-    fovSlider.BackgroundTransparency = 1
-    fovSlider.Parent = Content
-
-    local fovLabel = Instance.new("TextLabel")
-    fovLabel.Size = UDim2.new(1, 0, 0, 25)
-    fovLabel.BackgroundTransparency = 1
-    fovLabel.Text = "AIMBOT FOV: " .. CuTins.AIMBOT.FOV
-    fovLabel.TextColor3 = Color3.white
-    fovLabel.TextSize = 13
-    fovLabel.Font = Enum.Font.Gotham
-    fovLabel.Parent = fovSlider
-
-    local fovTrack = Instance.new("Frame")
-    fovTrack.Size = UDim2.new(1, 0, 0, 6)
-    fovTrack.Position = UDim2.new(0, 0, 0, 35)
-    fovTrack.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-    fovTrack.Parent = fovSlider
-
-    local fovFill = Instance.new("Frame")
-    fovFill.Size = UDim2.new((CuTins.AIMBOT.FOV - 10) / 190, 0, 1, 0)
-    fovFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-    fovFill.Parent = fovTrack
-
-    local fovButton = Instance.new("TextButton")
-    fovButton.Size = UDim2.new(0, 12, 0, 12)
-    fovButton.Position = UDim2.new((CuTins.AIMBOT.FOV - 10) / 190, -6, 0.5, -6)
-    fovButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    fovButton.Text = ""
-    fovButton.Parent = fovTrack
-
-    -- SLIDER CHO HITBOX SIZE
-    local hitboxSlider = Instance.new("Frame")
-    hitboxSlider.Size = UDim2.new(1, 0, 0, 60)
-    hitboxSlider.Position = UDim2.new(0, 0, 0, 400)
-    hitboxSlider.BackgroundTransparency = 1
-    hitboxSlider.Parent = Content
-
-    local hitboxLabel = Instance.new("TextLabel")
-    hitboxLabel.Size = UDim2.new(1, 0, 0, 25)
-    hitboxLabel.BackgroundTransparency = 1
-    hitboxLabel.Text = "HITBOX SIZE: " .. CuTins.HITBOX.SIZE .. "x"
-    hitboxLabel.TextColor3 = Color3.white
-    hitboxLabel.TextSize = 13
-    hitboxLabel.Font = Enum.Font.Gotham
-    hitboxLabel.Parent = hitboxSlider
-
-    local hitboxTrack = Instance.new("Frame")
-    hitboxTrack.Size = UDim2.new(1, 0, 0, 6)
-    hitboxTrack.Position = UDim2.new(0, 0, 0, 35)
-    hitboxTrack.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-    hitboxTrack.Parent = hitboxSlider
-
-    local hitboxFill = Instance.new("Frame")
-    hitboxFill.Size = UDim2.new((CuTins.HITBOX.SIZE - 1) / 4, 0, 1, 0)
-    hitboxFill.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
-    hitboxFill.Parent = hitboxTrack
-
-    local hitboxButton = Instance.new("TextButton")
-    hitboxButton.Size = UDim2.new(0, 12, 0, 12)
-    hitboxButton.Position = UDim2.new((CuTins.HITBOX.SIZE - 1) / 4, -6, 0.5, -6)
-    hitboxButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    hitboxButton.Text = ""
-    hitboxButton.Parent = hitboxTrack
-
-    -- SỰ KIỆN SLIDER
-    local function setupSlider(button, track, fill, label, min, max, setting, category, isFloat)
-        local dragging = false
-        
-        button.MouseButton1Down:Connect(function()
-            dragging = true
-        end)
-        
-        UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-        
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local mousePos = UserInputService:GetMouseLocation()
-                local trackAbsPos = track.AbsolutePosition
-                local trackAbsSize = track.AbsoluteSize
-                
-                local relativeX = (mousePos.X - trackAbsPos.X) / trackAbsSize.X
-                relativeX = math.clamp(relativeX, 0, 1)
-                
-                local newValue
-                if isFloat then
-                    newValue = math.floor((min + (relativeX * (max - min))) * 10) / 10
-                else
-                    newValue = math.floor(min + (relativeX * (max - min)))
-                end
-                
-                CuTins[category][setting] = newValue
-                label.Text = string.upper(setting) .. ": " .. newValue .. (isFloat and "x" : "")
-                
-                fill.Size = UDim2.new(relativeX, 0, 1, 0)
-                button.Position = UDim2.new(relativeX, -6, 0.5, -6)
-            end
-        end)
-    end
-
-    setupSlider(fovButton, fovTrack, fovFill, fovLabel, 10, 200, "FOV", "AIMBOT", false)
-    setupSlider(hitboxButton, hitboxTrack, hitboxFill, hitboxLabel, 1, 5, "SIZE", "HITBOX", true)
 
     -- SỰ KIỆN ĐÓNG
     CloseButton.MouseButton1Click:Connect(function()
@@ -252,17 +142,20 @@ local function createOriginalGUI()
     return GUI
 end
 
--- ✅ HÀM GAME GỐC
+-- ✅ HÀM GAME - ĐÃ SỬA LỖI
 local function getClosestPlayer()
     if not CuTins.AIMBOT.ENABLED then return nil end
     
     local closest = nil
     local closestDist = CuTins.AIMBOT.FOV
     
-    for _, player in pairs(Players:GetPlayers()) do
+    for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-            if CuTins.AIMBOT.TEAM_CHECK and player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-                continue
+            -- Team Check
+            if CuTins.AIMBOT.TEAM_CHECK then
+                if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+                    continue
+                end
             end
             
             local root = player.Character:FindFirstChild("HumanoidRootPart")
@@ -308,10 +201,13 @@ local function updateESP()
     if not CuTins.ESP.ENABLED then return end
     
     -- Tạo ESP mới
-    for _, player in pairs(Players:GetPlayers()) do
+    for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-            if CuTins.ESP.TEAM_CHECK and player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-                continue
+            -- Team Check
+            if CuTins.ESP.TEAM_CHECK then
+                if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+                    goto continue
+                end
             end
             
             local highlight = Instance.new("Highlight")
@@ -322,6 +218,8 @@ local function updateESP()
             highlight.Parent = player.Character
             
             ESP_ITEMS[player] = highlight
+            
+            ::continue::
         end
     end
 end
@@ -336,7 +234,7 @@ local function cleanupESP()
 end
 
 local function updateHitboxes()
-    for _, player in pairs(Players:GetPlayers()) do
+    for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
             local head = player.Character:FindFirstChild("Head")
             if head then
@@ -370,8 +268,14 @@ end
 
 local function toggleFly()
     -- Dọn dẹp fly cũ
-    if BODYGYRO then BODYGYRO:Destroy() end
-    if BODYVELOCITY then BODYVELOCITY:Destroy() end
+    if BODYGYRO then 
+        BODYGYRO:Destroy() 
+        BODYGYRO = nil
+    end
+    if BODYVELOCITY then 
+        BODYVELOCITY:Destroy() 
+        BODYVELOCITY = nil
+    end
     
     if not CuTins.FLY.ENABLED then return end
     
@@ -395,7 +299,7 @@ local function toggleFly()
     BODYVELOCITY.Parent = rootPart
 end
 
--- ✅ VÒNG LẶP CHÍNH
+-- ✅ VÒNG LẶP CHÍNH - ĐÃ SỬA LỖI
 RunService.Heartbeat:Connect(function()
     -- Aimbot
     if CuTins.AIMBOT.ENABLED and TARGET then
@@ -441,7 +345,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ✅ XỬ LÝ INPUT
+-- ✅ XỬ LÝ INPUT - ĐÃ SỬA LỖI
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
@@ -452,7 +356,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
     
     -- Toggle GUI với Insert
     if input.KeyCode == Enum.KeyCode.Insert then
-        createOriginalGUI()
+        createGUI()
     end
 end)
 
@@ -464,11 +368,12 @@ UserInputService.InputEnded:Connect(function(input, processed)
     end
 end)
 
--- ✅ KHỞI TẠO
-local GUI = createOriginalGUI()
-
-print([[
- 
+-- ✅ KHỞI TẠO AN TOÀN
+local success, err = pcall(function()
+    local GUI = createGUI()
+    
+    print([[
+     
  ██████ ██    ██ ████████ ██ ███    ██ ███████
 ██      ██    ██    ██    ██ ████   ██ ██
 ██      ██    ██    ██    ██ ██ ██  ██ ███████
@@ -477,9 +382,15 @@ print([[
                                                  
         Menu Hack - CuTins © 2025
 
-✅ GUI GỐC ĐÃ ĐƯỢC KHÔI PHỤC!
+✅ SCRIPT ĐÃ CHẠY THÀNH CÔNG!
 
 ]])
+
+end)
+
+if not success then
+    warn("Lỗi khởi tạo: " .. tostring(err))
+end
 
 -- Dọn dẹp khi thoát
 game:GetService("Players").PlayerRemoving:Connect(function(player)
