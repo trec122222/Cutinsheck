@@ -1,5 +1,5 @@
--- CuTins Heck HUB 2025 - ERROR FIXED EDITION
--- COMPLETE BUG FIXES APPLIED
+-- CuTins Heck HUB 2025 - FPS ENHANCED EDITION
+-- INTEGRATED FPS GAME FEATURES
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,15 +7,17 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
 
--- ✅ SAFE CONFIGURATION WITH ERROR HANDLING
+-- FPS-OPTIMIZED CONFIGURATION
 local CuTins = {
     ACTIVE = true,
-    VERSION = "CuTins Heck 2025 - STABLE",
+    VERSION = "CuTins Heck 2025 - FPS PRO",
     UI_OPEN = true,
     MINIMIZED = false,
     
-    -- MODULES WITH SAFE DEFAULTS
+    -- FPS COMBAT MODULES
     AIMBOT = {
         ENABLED = false,
         MOUSE_BUTTON = Enum.UserInputType.MouseButton1,
@@ -23,30 +25,129 @@ local CuTins = {
         SMOOTHING = 0.3,
         TARGET_BONE = "Head",
         TEAM_CHECK = true,
-        HEADSHOT_PRIORITY = true
+        HEADSHOT_PRIORITY = true,
+        -- FPS ENHANCEMENTS
+        AUTO_FIRE = false,
+        FIRE_DELAY = 0.1,
+        SILENT_AIM = false,
+        HIT_CHANCE = 100,
+        PREDICTION = true,
+        PREDICTION_STRENGTH = 0.15
     },
     
     ESP = {
         ENABLED = false,
         TEAM_CHECK = true,
         BOX = true,
-        NAMES = false, -- Disabled to prevent errors
-        HEALTH = false,
-        DISTANCE = false
+        NAMES = true,
+        HEALTH = true,
+        DISTANCE = true,
+        WEAPON = true,
+        -- FPS ENHANCEMENTS
+        CHAMS = false,
+        CHAMS_COLOR = Color3.fromRGB(255, 0, 0),
+        TRACERS = false,
+        TRACER_ORIGIN = "Bottom",
+        SKELETON = false,
+        HEALTH_BAR = true
     },
     
     HITBOX = {
         ENABLED = false,
-        SIZE = 2.0
+        SIZE = 2.0,
+        -- FPS ENHANCEMENTS
+        DYNAMIC = false,
+        AUTO_RESIZE = true,
+        BODY_PART = "Head" -- Head, Torso, All
     },
     
     FLY = {
         ENABLED = false,
-        SPEED = 3
+        SPEED = 3,
+        -- FPS ENHANCEMENTS
+        NOCLIP = false,
+        MODE = "Normal" -- Normal, Hover, Jetpack
+    },
+    
+    -- NEW: FPS WEAPON MODULES
+    WEAPON = {
+        NO_RECOIL = false,
+        NO_SPREAD = false,
+        RAPID_FIRE = false,
+        FIRE_RATE_MULTIPLIER = 2.0,
+        INSTANT_RELOAD = false,
+        INFINITE_AMMO = false,
+        AUTO_RELOAD = false,
+        -- FPS ENHANCEMENTS
+        DAMAGE_MULTIPLIER = 1.0,
+        PENETRATION = false,
+        SILENT_SHOT = false
+    },
+    
+    -- NEW: FPS MOVEMENT MODULES
+    MOVEMENT = {
+        SPEED_HACK = false,
+        SPEED_MULTIPLIER = 2.0,
+        HIGH_JUMP = false,
+        JUMP_POWER = 2.0,
+        -- FPS ENHANCEMENTS
+        BUNNY_HOP = false,
+        AUTO_STRAFE = false,
+        WALL_CLIMB = false,
+        INFINITE_STAMINA = false,
+        NO_SLOWDOWN = false
+    },
+    
+    -- NEW: FPS VISUAL MODULES
+    VISUAL = {
+        FULLBRIGHT = false,
+        FOV_CHANGER = false,
+        FOV_VALUE = 80,
+        CROSSHAIR = false,
+        CROSSHAIR_SIZE = 12,
+        CROSSHAIR_COLOR = Color3.fromRGB(255, 255, 255),
+        -- FPS ENHANCEMENTS
+        NIGHT_VISION = false,
+        THERMAL_VISION = false,
+        NO_FLASH = false,
+        NO_SMOKE = false,
+        ENEMY_GLOW = false,
+        THIRD_PERSON = false,
+        ZOOM = false,
+        ZOOM_LEVEL = 2.0
+    },
+    
+    -- NEW: FPS GAME MODULES
+    GAME = {
+        RADAR = false,
+        RADAR_RANGE = 200,
+        AUTO_PICKUP = false,
+        AUTO_DOORS = false,
+        -- FPS ENHANCEMENTS
+        UNLOCK_ALL = false,
+        XP_MULTIPLIER = 1.0,
+        SCORE_BOOST = false,
+        ANTI_KICK = false,
+        LAG_SWITCH = false,
+        SERVER_CRASHER = false
+    },
+    
+    -- NEW: FPS MISC MODULES
+    MISC = {
+        ANTI_AFK = false,
+        AUTO_FARM = false,
+        -- FPS ENHANCEMENTS
+        KILL_NOTIFICATIONS = true,
+        KILL_SOUND = false,
+        HIT_MARKER = false,
+        KILL_COUNTER = false,
+        PLAYER_INFO = true,
+        ITEM_ESP = false,
+        XRAY = false
     }
 }
 
--- ✅ SAFE VARIABLES WITH NIL CHECKS
+-- FPS VARIABLES
 local TARGET = nil
 local ESP_ITEMS = {}
 local FLYING = false
@@ -54,237 +155,485 @@ local BODYGYRO, BODYVELOCITY = nil, nil
 local SCREEN_GUI = nil
 local MAIN_FRAME = nil
 
--- ✅ SAFE FUNCTION WRAPPERS
-local function SafeCall(func, fallback)
-    return function(...)
-        local success, result = pcall(func, ...)
-        if not success then
-            warn("Function error: " .. tostring(result))
-            return fallback
-        end
-        return result
-    end
-end
+-- NEW: FPS-SPECIFIC VARIABLES
+local CROSSHAIR_FRAME = nil
+local RADAR_FRAME = nil
+local KILL_COUNT = 0
+local LAST_KILL_TIME = 0
+local WEAPON_HOOKS = {}
+local MOVEMENT_HOOKS = {}
+local ZOOMING = false
+local ORIGINAL_FOV = Camera.FieldOfView
 
-local function SafeDestroy(obj)
-    if obj and obj.Parent then
-        pcall(function() obj:Destroy() end)
-    end
-end
-
-local function SafeWait(seconds)
-    local success = pcall(function()
-        wait(seconds or 0.1)
-    end)
-    return success
-end
-
--- ✅ FIXED HUB CREATION WITH ERROR HANDLING
-function createHubInterface()
-    -- Safe cleanup
-    pcall(function()
-        if SCREEN_GUI then
-            SafeDestroy(SCREEN_GUI)
-        end
-        local oldGUI = game:GetService("CoreGui"):FindFirstChild("CuTinsHeckUI")
-        if oldGUI then
-            SafeDestroy(oldGUI)
-        end
-    end)
-
-    -- Create main ScreenGui with protection
-    local success, gui = pcall(function()
-        local GUI = Instance.new("ScreenGui")
-        GUI.Name = "CuTinsHeckUI"
-        GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        GUI.DisplayOrder = 999
-        GUI.Parent = game:GetService("CoreGui")
-        return GUI
-    end)
-    
-    if not success then return nil end
-    SCREEN_GUI = gui
-
-    -- Create main container with error handling
-    local mainSuccess, mainFrame = pcall(function()
-        local Frame = Instance.new("Frame")
-        Frame.Name = "MainFrame"
-        Frame.Size = UDim2.new(0, 400, 0, 500)
-        Frame.Position = UDim2.new(0, 20, 0.5, -250)
-        Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        Frame.BackgroundTransparency = 0.1
-        Frame.BorderSizePixel = 0
-        Frame.ClipsDescendants = true
-        Frame.Parent = SCREEN_GUI
+-- ✅ FPS WEAPON SYSTEM
+function setupWeaponHooks()
+    -- Hook into weapon systems for FPS games
+    local function hookTool(tool)
+        if not tool:IsA("Tool") then return end
         
-        local UICorner = Instance.new("UICorner")
-        UICorner.CornerRadius = UDim.new(0, 12)
-        UICorner.Parent = Frame
-        
-        return Frame
-    end)
-    
-    if not mainSuccess then return nil end
-    MAIN_FRAME = mainFrame
-
-    -- ✅ SIMPLIFIED HEADER (FIXED VERSION)
-    pcall(function()
-        local Header = Instance.new("Frame")
-        Header.Name = "Header"
-        Header.Size = UDim2.new(1, 0, 0, 50)
-        Header.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-        Header.BorderSizePixel = 0
-        Header.Parent = MAIN_FRAME
-
-        local HeaderCorner = Instance.new("UICorner")
-        HeaderCorner.CornerRadius = UDim.new(0, 12)
-        HeaderCorner.Parent = Header
-
-        -- Title
-        local Title = Instance.new("TextLabel")
-        Title.Name = "Title"
-        Title.Size = UDim2.new(0.6, 0, 1, 0)
-        Title.Position = UDim2.new(0, 15, 0, 0)
-        Title.BackgroundTransparency = 1
-        Title.Text = "CuTins Heck 2025 - STABLE"
-        Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Title.TextSize = 16
-        Title.Font = Enum.Font.GothamBold
-        Title.TextXAlignment = Enum.TextXAlignment.Left
-        Title.Parent = Header
-
-        -- Control Buttons
-        local MinimizeButton = Instance.new("TextButton")
-        MinimizeButton.Name = "MinimizeButton"
-        MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-        MinimizeButton.Position = UDim2.new(1, -70, 0.5, -15)
-        MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
-        MinimizeButton.Text = "_"
-        MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        MinimizeButton.TextSize = 16
-        MinimizeButton.Font = Enum.Font.GothamBold
-        MinimizeButton.Parent = Header
-
-        local CloseButton = Instance.new("TextButton")
-        CloseButton.Name = "CloseButton"
-        CloseButton.Size = UDim2.new(0, 30, 0, 30)
-        CloseButton.Position = UDim2.new(1, -35, 0.5, -15)
-        CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-        CloseButton.Text = "X"
-        CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        CloseButton.TextSize = 14
-        CloseButton.Font = Enum.Font.GothamBold
-        CloseButton.Parent = Header
-
-        -- Button functionality
-        CloseButton.MouseButton1Click:Connect(function()
-            CuTins.UI_OPEN = false
-            SCREEN_GUI.Enabled = false
-        end)
-
-        MinimizeButton.MouseButton1Click:Connect(function()
-            CuTins.MINIMIZED = not CuTins.MINIMIZED
-            local Content = MAIN_FRAME:FindFirstChild("Content")
-            if Content then
-                Content.Visible = not CuTins.MINIMIZED
-            end
-            if CuTins.MINIMIZED then
-                MAIN_FRAME.Size = UDim2.new(0, 400, 0, 50)
-                MinimizeButton.Text = "□"
-            else
-                MAIN_FRAME.Size = UDim2.new(0, 400, 0, 500)
-                MinimizeButton.Text = "_"
-            end
-        end)
-    end)
-
-    -- ✅ SIMPLIFIED CONTENT AREA
-    pcall(function()
-        local Content = Instance.new("Frame")
-        Content.Name = "Content"
-        Content.Size = UDim2.new(1, -20, 1, -70)
-        Content.Position = UDim2.new(0, 10, 0, 60)
-        Content.BackgroundTransparency = 1
-        Content.Visible = not CuTins.MINIMIZED
-        Content.Parent = MAIN_FRAME
-
-        local ScrollingFrame = Instance.new("ScrollingFrame")
-        ScrollingFrame.Name = "ScrollingFrame"
-        ScrollingFrame.Size = UDim2.new(1, 0, 1, 0)
-        ScrollingFrame.BackgroundTransparency = 1
-        ScrollingFrame.ScrollBarThickness = 3
-        ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 150)
-        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 400)
-        ScrollingFrame.Parent = Content
-
-        -- ✅ BASIC TOGGLE SYSTEM (STABLE VERSION)
-        local features = {
-            {"🎯 AIMBOT", "AIMBOT", "ENABLED"},
-            {"🔵 TEAM CHECK", "AIMBOT", "TEAM_CHECK"},
-            {"👁️ ESP", "ESP", "ENABLED"},
-            {"🎯 HITBOX", "HITBOX", "ENABLED"},
-            {"🕊️ FLY", "FLY", "ENABLED"}
+        -- Store original values
+        WEAPON_HOOKS[tool] = {
+            FireRate = tool:FindFirstChild("FireRate") and tool.FireRate.Value or nil,
+            Recoil = tool:FindFirstChild("Recoil") and tool.Recoil.Value or nil,
+            Spread = tool:FindFirstChild("Spread") and tool.Spread.Value or nil,
+            Ammo = tool:FindFirstChild("Ammo") and tool.Ammo.Value or nil,
+            MaxAmmo = tool:FindFirstChild("MaxAmmo") and tool.MaxAmmo.Value or nil
         }
-
-        for i, feature in ipairs(features) do
-            local ToggleFrame = Instance.new("Frame")
-            ToggleFrame.Size = UDim2.new(1, 0, 0, 40)
-            ToggleFrame.Position = UDim2.new(0, 0, 0, (i-1) * 45)
-            ToggleFrame.BackgroundTransparency = 1
-            ToggleFrame.Parent = ScrollingFrame
-
-            local Label = Instance.new("TextLabel")
-            Label.Size = UDim2.new(0.7, 0, 1, 0)
-            Label.BackgroundTransparency = 1
-            Label.Text = feature[1]
-            Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-            Label.TextSize = 14
-            Label.Font = Enum.Font.Gotham
-            Label.TextXAlignment = Enum.TextXAlignment.Left
-            Label.Parent = ToggleFrame
-
-            local ToggleButton = Instance.new("TextButton")
-            ToggleButton.Size = UDim2.new(0, 60, 0, 30)
-            ToggleButton.Position = UDim2.new(1, -65, 0.5, -15)
-            ToggleButton.BackgroundColor3 = CuTins[feature[2]][feature[3]] and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
-            ToggleButton.Text = CuTins[feature[2]][feature[3]] and "ON" or "OFF"
-            ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            ToggleButton.TextSize = 12
-            ToggleButton.Font = Enum.Font.GothamBold
-            ToggleButton.Parent = ToggleFrame
-
-            ToggleButton.MouseButton1Click:Connect(function()
-                CuTins[feature[2]][feature[3]] = not CuTins[feature[2]][feature[3]]
-                ToggleButton.BackgroundColor3 = CuTins[feature[2]][feature[3]] and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
-                ToggleButton.Text = CuTins[feature[2]][feature[3]] and "ON" or "OFF"
-                
-                -- Special handlers
-                if feature[2] == "FLY" then
-                    SafeCall(toggleFly)()
-                elseif feature[2] == "ESP" and not CuTins.ESP.ENABLED then
-                    SafeCall(cleanupESP)()
-                end
-            end)
+        
+        -- Apply modifications
+        if CuTins.WEAPON.RAPID_FIRE and tool:FindFirstChild("FireRate") then
+            tool.FireRate.Value = WEAPON_HOOKS[tool].FireRate / CuTins.WEAPON.FIRE_RATE_MULTIPLIER
         end
+        
+        if CuTins.WEAPON.NO_RECOIL and tool:FindFirstChild("Recoil") then
+            tool.Recoil.Value = 0
+        end
+        
+        if CuTins.WEAPON.NO_SPREAD and tool:FindFirstChild("Spread") then
+            tool.Spread.Value = 0
+        end
+    end
+    
+    -- Hook current tools
+    local character = LocalPlayer.Character
+    if character then
+        for _, tool in pairs(character:GetChildren()) do
+            hookTool(tool)
+        end
+    end
+    
+    -- Hook future tools
+    LocalPlayer.CharacterAdded:Connect(function(char)
+        char.ChildAdded:Connect(function(tool)
+            if tool:IsA("Tool") then
+                hookTool(tool)
+            end
+        end)
     end)
-
-    return SCREEN_GUI
 end
 
--- ✅ FIXED GAME FUNCTIONS WITH SAFE CHECKS
-function getClosestPlayer()
+function restoreWeaponHooks()
+    for tool, originalValues in pairs(WEAPON_HOOKS) do
+        if tool and tool.Parent then
+            if originalValues.FireRate and tool:FindFirstChild("FireRate") then
+                tool.FireRate.Value = originalValues.FireRate
+            end
+            if originalValues.Recoil and tool:FindFirstChild("Recoil") then
+                tool.Recoil.Value = originalValues.Recoil
+            end
+            if originalValues.Spread and tool:FindFirstChild("Spread") then
+                tool.Spread.Value = originalValues.Spread
+            end
+        end
+    end
+    WEAPON_HOOKS = {}
+end
+
+-- ✅ FPS MOVEMENT SYSTEM
+function setupMovementHooks()
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    -- Store original values
+    MOVEMENT_HOOKS = {
+        WalkSpeed = humanoid.WalkSpeed,
+        JumpPower = humanoid.JumpPower
+    }
+    
+    -- Apply movement modifications
+    if CuTins.MOVEMENT.SPEED_HACK then
+        humanoid.WalkSpeed = MOVEMENT_HOOKS.WalkSpeed * CuTins.MOVEMENT.SPEED_MULTIPLIER
+    end
+    
+    if CuTins.MOVEMENT.HIGH_JUMP then
+        humanoid.JumpPower = MOVEMENT_HOOKS.JumpPower * CuTins.MOVEMENT.JUMP_POWER
+    end
+    
+    -- Bunny hop automation
+    if CuTins.MOVEMENT.BUNNY_HOP then
+        coroutine.wrap(function()
+            while CuTins.MOVEMENT.BUNNY_HOP and CuTins.ACTIVE do
+                if humanoid.MoveDirection.Magnitude > 0 then
+                    humanoid.Jump = true
+                end
+                wait(0.1)
+            end
+        end)()
+    end
+end
+
+function restoreMovementHooks()
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    if MOVEMENT_HOOKS.WalkSpeed then
+        humanoid.WalkSpeed = MOVEMENT_HOOKS.WalkSpeed
+    end
+    
+    if MOVEMENT_HOOKS.JumpPower then
+        humanoid.JumpPower = MOVEMENT_HOOKS.JumpPower
+    end
+end
+
+-- ✅ FPS RADAR SYSTEM
+function createRadar()
+    if RADAR_FRAME then
+        RADAR_FRAME:Destroy()
+        RADAR_FRAME = nil
+    end
+    
+    if not CuTins.GAME.RADAR then return end
+    
+    RADAR_FRAME = Instance.new("Frame")
+    RADAR_FRAME.Name = "Radar"
+    RADAR_FRAME.Size = UDim2.new(0, 200, 0, 200)
+    RADAR_FRAME.Position = UDim2.new(1, -220, 1, -220)
+    RADAR_FRAME.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    RADAR_FRAME.BackgroundTransparency = 0.3
+    RADAR_FRAME.BorderSizePixel = 2
+    RADAR_FRAME.BorderColor3 = Color3.fromRGB(255, 255, 255)
+    RADAR_FRAME.Parent = SCREEN_GUI
+    
+    local radarCorner = Instance.new("UICorner")
+    radarCorner.CornerRadius = UDim.new(0, 8)
+    radarCorner.Parent = RADAR_FRAME
+    
+    local radarTitle = Instance.new("TextLabel")
+    radarTitle.Size = UDim2.new(1, 0, 0, 20)
+    radarTitle.BackgroundTransparency = 1
+    radarTitle.Text = "RADAR"
+    radarTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    radarTitle.TextSize = 12
+    radarTitle.Font = Enum.Font.GothamBold
+    radarTitle.Parent = RADAR_FRAME
+    
+    return RADAR_FRAME
+end
+
+function updateRadar()
+    if not RADAR_FRAME or not CuTins.GAME.RADAR then return end
+    
+    -- Clear previous blips
+    for _, child in pairs(RADAR_FRAME:GetChildren()) do
+        if child.Name == "RadarBlip" then
+            child:Destroy()
+        end
+    end
+    
+    local localCharacter = LocalPlayer.Character
+    if not localCharacter then return end
+    
+    local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
+    if not localRoot then return end
+    
+    -- Add enemy blips
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local character = player.Character
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            
+            if humanoid and humanoid.Health > 0 and rootPart then
+                local distance = (rootPart.Position - localRoot.Position).Magnitude
+                if distance <= CuTins.GAME.RADAR_RANGE then
+                    -- Calculate radar position
+                    local relativePos = localRoot.CFrame:PointToObjectSpace(rootPart.Position)
+                    local radarX = (relativePos.X / CuTins.GAME.RADAR_RANGE) * 90
+                    local radarY = (relativePos.Z / CuTins.GAME.RADAR_RANGE) * 90
+                    
+                    -- Create blip
+                    local blip = Instance.new("Frame")
+                    blip.Name = "RadarBlip"
+                    blip.Size = UDim2.new(0, 6, 0, 6)
+                    blip.Position = UDim2.new(0.5, radarX - 3, 0.5, radarY - 3)
+                    blip.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                    blip.BorderSizePixel = 0
+                    blip.Parent = RADAR_FRAME
+                    
+                    local blipCorner = Instance.new("UICorner")
+                    blipCorner.CornerRadius = UDim.new(1, 0)
+                    blipCorner.Parent = blip
+                end
+            end
+        end
+    end
+end
+
+-- ✅ FPS ZOOM SYSTEM
+function toggleZoom()
+    if not CuTins.VISUAL.ZOOM then
+        Camera.FieldOfView = ORIGINAL_FOV
+        ZOOMING = false
+        return
+    end
+    
+    ZOOMING = true
+    Camera.FieldOfView = ORIGINAL_FOV / CuTins.VISUAL.ZOOM_LEVEL
+end
+
+-- ✅ FPS NIGHT VISION
+function toggleNightVision()
+    if CuTins.VISUAL.NIGHT_VISION then
+        Lighting.Ambient = Color3.fromRGB(128, 128, 255)
+        Lighting.Brightness = 2
+        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 255)
+    else
+        Lighting.Ambient = Color3.fromRGB(1, 1, 1)
+        Lighting.Brightness = 1
+        Lighting.OutdoorAmbient = Color3.fromRGB(0.5, 0.5, 0.5)
+    end
+end
+
+-- ✅ FPS THERMAL VISION
+function toggleThermalVision()
+    if CuTins.VISUAL.THERMAL_VISION then
+        -- Apply thermal vision effect to players
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.Color = Color3.fromRGB(255, 0, 0) -- Red for enemies
+                        part.Material = Enum.Material.Neon
+                    end
+                end
+            end
+        end
+    else
+        -- Restore original colors
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character then
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.Color = Color3.fromRGB(1, 1, 1)
+                        part.Material = Enum.Material.Plastic
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- ✅ FPS KILL COUNTER & NOTIFICATIONS
+function onKill(victim)
+    KILL_COUNT = KILL_COUNT + 1
+    LAST_KILL_TIME = tick()
+    
+    if CuTins.MISC.KILL_NOTIFICATIONS then
+        showKillNotification(victim.Name)
+    end
+    
+    if CuTins.MISC.KILL_SOUND then
+        playKillSound()
+    end
+end
+
+function showKillNotification(victimName)
+    local notification = Instance.new("TextLabel")
+    notification.Size = UDim2.new(0, 200, 0, 40)
+    notification.Position = UDim2.new(0.5, -100, 0.1, 0)
+    notification.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    notification.Text = "💀 ELIMINATED: " .. victimName
+    notification.TextColor3 = Color3.fromRGB(255, 50, 50)
+    notification.TextSize = 14
+    notification.Font = Enum.Font.GothamBold
+    notification.Parent = SCREEN_GUI
+    
+    -- Animate and remove
+    coroutine.wrap(function()
+        for i = 1, 50 do
+            notification.Position = UDim2.new(0.5, -100, 0.1, -i/10)
+            notification.BackgroundTransparency = i/50
+            wait(0.02)
+        end
+        notification:Destroy()
+    end)()
+end
+
+function playKillSound()
+    -- Play kill sound effect
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://3578335185" -- Kill sound
+    sound.Volume = 0.5
+    sound.Parent = workspace
+    sound:Play()
+    game:GetService("Debris"):AddItem(sound, 2)
+end
+
+-- ✅ FPS HIT MARKER
+function showHitMarker()
+    if not CuTins.MISC.HIT_MARKER then return end
+    
+    local hitMarker = Instance.new("Frame")
+    hitMarker.Name = "HitMarker"
+    hitMarker.Size = UDim2.new(0, 20, 0, 20)
+    hitMarker.Position = UDim2.new(0.5, -10, 0.5, -10)
+    hitMarker.BackgroundTransparency = 1
+    hitMarker.Parent = SCREEN_GUI
+    
+    -- Create cross shape
+    local line1 = Instance.new("Frame")
+    line1.Size = UDim2.new(0, 2, 0, 10)
+    line1.Position = UDim2.new(0.5, -1, 0.5, -5)
+    line1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    line1.BorderSizePixel = 0
+    line1.Parent = hitMarker
+    
+    local line2 = Instance.new("Frame")
+    line2.Size = UDim2.new(0, 10, 0, 2)
+    line2.Position = UDim2.new(0.5, -5, 0.5, -1)
+    line2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    line2.BorderSizePixel = 0
+    line2.Parent = hitMarker
+    
+    -- Animate and remove
+    coroutine.wrap(function()
+        for i = 1, 10 do
+            hitMarker.BackgroundTransparency = i/10
+            wait(0.02)
+        end
+        hitMarker:Destroy()
+    end)()
+end
+
+-- ✅ FPS ENHANCED ESP
+function createFPSESP(player)
+    if player == LocalPlayer then return end
+    
+    local character = player.Character
+    if not character then return end
+    
+    -- Team check
+    if CuTins.ESP.TEAM_CHECK then
+        if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+            return
+        end
+    end
+    
+    -- Remove old ESP
+    if ESP_ITEMS[player] then
+        for _, item in pairs(ESP_ITEMS[player]) do
+            item:Destroy()
+        end
+    end
+    
+    ESP_ITEMS[player] = {}
+    
+    if CuTins.ESP.ENABLED then
+        -- Main highlight
+        local highlight = Instance.new("Highlight")
+        highlight.FillColor = Color3.fromRGB(255, 50, 50)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.FillTransparency = 0.7
+        highlight.Parent = character
+        table.insert(ESP_ITEMS[player], highlight)
+        
+        -- Health bar
+        if CuTins.ESP.HEALTH_BAR then
+            createHealthBar(player, character)
+        end
+        
+        -- Weapon display
+        if CuTins.ESP.WEAPON then
+            createWeaponDisplay(player, character)
+        end
+    end
+    
+    -- Chams
+    if CuTins.ESP.CHAMS then
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Material = Enum.Material.ForceField
+                part.Color = CuTins.ESP.CHAMS_COLOR
+            end
+        end
+    end
+end
+
+function createHealthBar(player, character)
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    local head = character:FindFirstChild("Head")
+    if not head then return end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "HealthBar"
+    billboard.Size = UDim2.new(0, 50, 0, 6)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = head
+    
+    local background = Instance.new("Frame")
+    background.Size = UDim2.new(1, 0, 1, 0)
+    background.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    background.BorderSizePixel = 0
+    background.Parent = billboard
+    
+    local healthBar = Instance.new("Frame")
+    healthBar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+    healthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    healthBar.BorderSizePixel = 0
+    healthBar.Parent = billboard
+    
+    table.insert(ESP_ITEMS[player], billboard)
+    
+    -- Update health bar
+    humanoid.HealthChanged:Connect(function()
+        healthBar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+        healthBar.BackgroundColor3 = Color3.fromRGB(
+            255 - (humanoid.Health / humanoid.MaxHealth) * 255,
+            (humanoid.Health / humanoid.MaxHealth) * 255,
+            0
+        )
+    end)
+end
+
+function createWeaponDisplay(player, character)
+    local tool = character:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    
+    local head = character:FindFirstChild("Head")
+    if not head then return end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "WeaponDisplay"
+    billboard.Size = UDim2.new(0, 100, 0, 20)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = head
+    
+    local weaponLabel = Instance.new("TextLabel")
+    weaponLabel.Size = UDim2.new(1, 0, 1, 0)
+    weaponLabel.BackgroundTransparency = 1
+    weaponLabel.Text = "🔫 " .. tool.Name
+    weaponLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    weaponLabel.TextSize = 12
+    weaponLabel.Font = Enum.Font.GothamBold
+    weaponLabel.Parent = billboard
+    
+    table.insert(ESP_ITEMS[player], billboard)
+end
+
+-- ✅ FPS ENHANCED AIMBOT
+function getFPSClosestPlayer()
     if not CuTins.AIMBOT.ENABLED then return nil end
     
     local closest = nil
     local closestDist = CuTins.AIMBOT.FOV
+    local viewportCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     
-    for _, player in ipairs(Players:GetPlayers()) do
+    for _, player in pairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         
         local character = player.Character
         if not character then continue end
         
-        -- SAFE CHARACTER CHECK
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         local head = character:FindFirstChild("Head")
         local rootPart = character:FindFirstChild("HumanoidRootPart")
@@ -301,24 +650,33 @@ function getClosestPlayer()
         
         local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
         if onScreen then
-            local mousePos = UserInputService:GetMouseLocation()
-            local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+            local distance = (Vector2.new(screenPos.X, screenPos.Y) - viewportCenter).Magnitude
+            
             if distance < closestDist then
-                closestDist = distance
-                closest = player
+                -- Headshot priority
+                if CuTins.AIMBOT.HEADSHOT_PRIORITY then
+                    local headScreenPos = Camera:WorldToViewportPoint(head.Position)
+                    local headDistance = (Vector2.new(headScreenPos.X, headScreenPos.Y) - viewportCenter).Magnitude
+                    
+                    if headDistance < closestDist then
+                        closestDist = headDistance
+                        closest = player
+                    end
+                else
+                    closestDist = distance
+                    closest = player
+                end
             end
         end
     end
+    
     return closest
 end
 
-function aimAtTarget()
-    if not TARGET then return end
+function FPSAimAtTarget()
+    if not TARGET or not TARGET.Character then return end
     
     local character = TARGET.Character
-    if not character then return end
-    
-    -- SAFE BONE ACCESS
     local targetBone = character:FindFirstChild(CuTins.AIMBOT.TARGET_BONE)
     if not targetBone then
         targetBone = character:FindFirstChild("HumanoidRootPart")
@@ -328,182 +686,99 @@ function aimAtTarget()
     local currentCF = Camera.CFrame
     local targetPos = targetBone.Position
     
+    -- Prediction for moving targets
+    if CuTins.AIMBOT.PREDICTION then
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            local distance = (targetPos - currentCF.Position).Magnitude
+            local travelTime = distance / 1000 -- Adjust based on bullet speed
+            targetPos = targetPos + (rootPart.Velocity * travelTime * CuTins.AIMBOT.PREDICTION_STRENGTH)
+        end
+    end
+    
     local direction = (targetPos - currentCF.Position).Unit
     local smoothDirection = currentCF.LookVector:Lerp(direction, CuTins.AIMBOT.SMOOTHING)
     Camera.CFrame = CFrame.new(currentCF.Position, currentCF.Position + smoothDirection)
 end
 
-function createESP(player)
-    if player == LocalPlayer then return end
-    if not player.Character then return end
+-- ✅ FPS ENHANCED MAIN LOOP
+RunService.RenderStepped:Connect(function()
+    -- Enhanced Aimbot
+    if CuTins.AIMBOT.ENABLED and TARGET then
+        FPSAimAtTarget()
+    end
     
-    -- Team check
-    if CuTins.ESP.TEAM_CHECK then
-        if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-            return
+    -- Auto Fire
+    if CuTins.AIMBOT.AUTO_FIRE and CuTins.AIMBOT.ENABLED then
+        if TARGET and tick() - LAST_SHOT > CuTins.AIMBOT.FIRE_DELAY then
+            -- Simulate firing
+            LAST_SHOT = tick()
         end
     end
     
-    local char = player.Character
-    
-    -- Remove old ESP
-    if ESP_ITEMS[player] then
-        SafeDestroy(ESP_ITEMS[player])
+    -- Update Radar
+    if CuTins.GAME.RADAR then
+        updateRadar()
     end
     
+    -- Update ESP
     if CuTins.ESP.ENABLED then
-        local highlight = Instance.new("Highlight")
-        highlight.FillColor = Color3.fromRGB(255, 50, 50)
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.FillTransparency = 0.7
-        highlight.Parent = char
-        ESP_ITEMS[player] = highlight
-    end
-end
-
-function cleanupESP()
-    for player, item in pairs(ESP_ITEMS) do
-        SafeDestroy(item)
-    end
-    ESP_ITEMS = {}
-end
-
-function updateHitboxes()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        if not player.Character then continue end
-        
-        local char = player.Character
-        for _, part in pairs(char:GetDescendants()) do
-            if part.Name == "CUTINS_HITBOX" then
-                SafeDestroy(part)
-            end
-        end
-        
-        if CuTins.HITBOX.ENABLED then
-            local head = char:FindFirstChild("Head")
-            if head then
-                local hitbox = Instance.new("Part")
-                hitbox.Name = "CUTINS_HITBOX"
-                hitbox.Size = head.Size * CuTins.HITBOX.SIZE
-                hitbox.Transparency = 1
-                hitbox.CanCollide = false
-                hitbox.Parent = head
-                
-                local weld = Instance.new("Weld")
-                weld.Part0 = head
-                weld.Part1 = hitbox
-                weld.C0 = CFrame.new()
-                weld.Parent = hitbox
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and not ESP_ITEMS[player] then
+                createFPSESP(player)
             end
         end
     end
-end
+end)
 
-function toggleFly()
-    -- Cleanup old
-    SafeDestroy(BODYGYRO)
-    SafeDestroy(BODYVELOCITY)
-    
-    if not CuTins.FLY.ENABLED then 
-        FLYING = false
-        return 
-    end
-    
-    local character = LocalPlayer.Character
-    if not character then return end
-    
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-    
-    BODYGYRO = Instance.new("BodyGyro")
-    BODYGYRO.P = 1000
-    BODYGYRO.D = 50
-    BODYGYRO.MaxTorque = Vector3.new(4000, 4000, 4000)
-    BODYGYRO.CFrame = rootPart.CFrame
-    BODYGYRO.Parent = rootPart
-    
-    BODYVELOCITY = Instance.new("BodyVelocity")
-    BODYVELOCITY.Velocity = Vector3.new(0, 0, 0)
-    BODYVELOCITY.MaxForce = Vector3.new(4000, 4000, 4000)
-    BODYVELOCITY.Parent = rootPart
-    
-    FLYING = true
-end
-
--- ✅ FIXED INPUT HANDLING
+-- ✅ FPS INPUT HANDLING
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
-    -- Toggle UI with Insert key
+    -- Toggle UI
     if input.KeyCode == Enum.KeyCode.Insert then
         CuTins.UI_OPEN = not CuTins.UI_OPEN
         if SCREEN_GUI then
             SCREEN_GUI.Enabled = CuTins.UI_OPEN
-        else
-            SafeCall(createHubInterface)()
         end
     end
     
-    -- Aimbot with left click
+    -- Aimbot
     if input.UserInputType == CuTins.AIMBOT.MOUSE_BUTTON and CuTins.AIMBOT.ENABLED then
-        TARGET = SafeCall(getClosestPlayer)()
+        TARGET = getFPSClosestPlayer()
     end
     
-    -- Fly toggle with F key
+    -- Fly
     if input.KeyCode == Enum.KeyCode.F then
         CuTins.FLY.ENABLED = not CuTins.FLY.ENABLED
-        SafeCall(toggleFly)()
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input, processed)
-    if processed then return end
-    
-    if input.UserInputType == CuTins.AIMBOT.MOUSE_BUTTON then
-        TARGET = nil
-    end
-end)
-
--- ✅ FIXED MAIN LOOP WITH ERROR PROTECTION
-RunService.RenderStepped:Connect(function()
-    -- Safe aimbot
-    if CuTins.AIMBOT.ENABLED and TARGET then
-        SafeCall(aimAtTarget)()
+        toggleFly()
     end
     
-    -- Safe ESP
-    if CuTins.ESP.ENABLED then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and not ESP_ITEMS[player] then
-                SafeCall(createESP)(player)
-            end
-        end
+    -- Zoom
+    if input.KeyCode == Enum.KeyCode.Z then
+        CuTins.VISUAL.ZOOM = not CuTins.VISUAL.ZOOM
+        toggleZoom()
     end
-end)
-
--- ✅ SAFE INITIALIZATION
-local initSuccess = pcall(function()
-    SafeCall(createHubInterface)()
     
-    -- Safe player tracking
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and CuTins.ESP.ENABLED and player.Character then
-            SafeCall(createESP)(player)
-        end
-        
-        player.CharacterAdded:Connect(function(char)
-            SafeWait(1)
-            if CuTins.ESP.ENABLED then
-                SafeCall(createESP)(player)
-            end
-        end)
+    -- Night Vision
+    if input.KeyCode == Enum.KeyCode.N then
+        CuTins.VISUAL.NIGHT_VISION = not CuTins.VISUAL.NIGHT_VISION
+        toggleNightVision()
+    end
+    
+    -- Radar
+    if input.KeyCode == Enum.KeyCode.R then
+        CuTins.GAME.RADAR = not CuTins.GAME.RADAR
+        createRadar()
     end
 end)
 
-if not initSuccess then
-    warn("CuTins Heck: Initialization had minor issues, but script is running")
-end
+-- ✅ FPS INITIALIZATION
+setupWeaponHooks()
+setupMovementHooks()
+createRadar()
+toggleNightVision()
+toggleZoom()
 
 print([[
 
@@ -513,11 +788,11 @@ print([[
 ██      ██    ██    ██    ██ ██  ██ ██       ██
  ██████  ██████     ██    ██ ██   ████ ████████
                                                  
-        Heck 2025 - STABLE EDITION
+        Heck 2025 - FPS PRO EDITION
 
 ]])
 
--- Safe main loop
+-- Keep script running
 while CuTins.ACTIVE do
-    SafeWait(1)
+    wait(1)
 end
