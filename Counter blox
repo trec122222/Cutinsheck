@@ -1,0 +1,804 @@
+-- CuTins Heck HUB 2025
+-- PASTE THIS INTO YOUR EXECUTOR
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- HUB CONFIGURATION
+local CuTins = {
+    ACTIVE = true,
+    VERSION = "CuTins Heck 2025",
+    UI_OPEN = true,
+    MINIMIZED = false,
+    
+    -- MODULES
+    AIMBOT = {
+        ENABLED = false,
+        MOUSE_BUTTON = Enum.UserInputType.MouseButton1,
+        FOV = 80,
+        SMOOTHING = 0.3,
+        TARGET_BONE = "Head",
+        TEAM_CHECK = true,
+        HEADSHOT_PRIORITY = true
+    },
+    
+    ESP = {
+        ENABLED = false,
+        TEAM_CHECK = true,
+        BOX = true,
+        NAMES = true,
+        HEALTH = true,
+        DISTANCE = true
+    },
+    
+    HITBOX = {
+        ENABLED = false,
+        SIZE = 2.0
+    },
+    
+    FLY = {
+        ENABLED = false,
+        SPEED = 3
+    }
+}
+
+-- HUB VARIABLES
+local TARGET = nil
+local ESP_ITEMS = {}
+local FLYING = false
+local BODYGYRO, BODYVELOCITY = nil, nil
+local SCREEN_GUI = nil
+local MAIN_FRAME = nil
+
+-- ✅ CREATE CUSTOM HUB INTERFACE
+function createHubInterface()
+    -- Create main ScreenGui
+    SCREEN_GUI = Instance.new("ScreenGui")
+    SCREEN_GUI.Name = "CuTinsHeckUI"
+    SCREEN_GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    SCREEN_GUI.DisplayOrder = 999
+    SCREEN_GUI.Parent = game:GetService("CoreGui")
+
+    -- Main Container
+    MAIN_FRAME = Instance.new("Frame")
+    MAIN_FRAME.Name = "MainFrame"
+    MAIN_FRAME.Size = UDim2.new(0, 400, 0, 500)
+    MAIN_FRAME.Position = UDim2.new(0, 20, 0.5, -250)
+    MAIN_FRAME.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    MAIN_FRAME.BackgroundTransparency = 0.1
+    MAIN_FRAME.BorderSizePixel = 0
+    MAIN_FRAME.ClipsDescendants = true
+    MAIN_FRAME.Parent = SCREEN_GUI
+
+    -- Corner
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 12)
+    UICorner.Parent = MAIN_FRAME
+
+    -- Shadow
+    local Shadow = Instance.new("ImageLabel")
+    Shadow.Name = "Shadow"
+    Shadow.Image = "rbxassetid://6014261993"
+    Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    Shadow.ImageTransparency = 0.6
+    Shadow.ScaleType = Enum.ScaleType.Slice
+    Shadow.SliceCenter = Rect.new(49, 49, 450, 450)
+    Shadow.Size = UDim2.new(1, 20, 1, 20)
+    Shadow.Position = UDim2.new(0, -10, 0, -10)
+    Shadow.BackgroundTransparency = 1
+    Shadow.Parent = MAIN_FRAME
+
+    -- Header
+    local Header = Instance.new("Frame")
+    Header.Name = "Header"
+    Header.Size = UDim2.new(1, 0, 0, 50)
+    Header.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    Header.BorderSizePixel = 0
+    Header.Parent = MAIN_FRAME
+
+    local HeaderCorner = Instance.new("UICorner")
+    HeaderCorner.CornerRadius = UDim.new(0, 12)
+    HeaderCorner.Parent = Header
+
+    -- Title
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Size = UDim2.new(0.6, 0, 1, 0)
+    Title.Position = UDim2.new(0, 15, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "CuTins Heck 2025"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 16
+    Title.Font = Enum.Font.GothamBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Header
+
+    -- Control Buttons
+    local MinimizeButton = Instance.new("TextButton")
+    MinimizeButton.Name = "MinimizeButton"
+    MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+    MinimizeButton.Position = UDim2.new(1, -70, 0.5, -15)
+    MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+    MinimizeButton.Text = "_"
+    MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MinimizeButton.TextSize = 16
+    MinimizeButton.Font = Enum.Font.GothamBold
+    MinimizeButton.Parent = Header
+
+    local MinimizeCorner = Instance.new("UICorner")
+    MinimizeCorner.CornerRadius = UDim.new(0, 6)
+    MinimizeCorner.Parent = MinimizeButton
+
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Name = "CloseButton"
+    CloseButton.Size = UDim2.new(0, 30, 0, 30)
+    CloseButton.Position = UDim2.new(1, -35, 0.5, -15)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    CloseButton.Text = "X"
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.TextSize = 14
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.Parent = Header
+
+    local CloseCorner = Instance.new("UICorner")
+    CloseCorner.CornerRadius = UDim.new(0, 6)
+    CloseCorner.Parent = CloseButton
+
+    -- Content Area
+    local Content = Instance.new("Frame")
+    Content.Name = "Content"
+    Content.Size = UDim2.new(1, -20, 1, -70)
+    Content.Position = UDim2.new(0, 10, 0, 60)
+    Content.BackgroundTransparency = 1
+    Content.Visible = not CuTins.MINIMIZED
+    Content.Parent = MAIN_FRAME
+
+    -- Scrolling Frame
+    local ScrollingFrame = Instance.new("ScrollingFrame")
+    ScrollingFrame.Name = "ScrollingFrame"
+    ScrollingFrame.Size = UDim2.new(1, 0, 1, 0)
+    ScrollingFrame.BackgroundTransparency = 1
+    ScrollingFrame.ScrollBarThickness = 3
+    ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 150)
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 600)
+    ScrollingFrame.Parent = Content
+
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Padding = UDim.new(0, 10)
+    UIListLayout.Parent = ScrollingFrame
+
+    -- ✅ CREATE MODULE SECTIONS
+
+    -- COMBAT SECTION
+    createSection("⚔️ COMBAT", ScrollingFrame)
+    createToggle("Aimbot", CuTins.AIMBOT.ENABLED, function(value)
+        CuTins.AIMBOT.ENABLED = value
+        updateStatus()
+    end, ScrollingFrame)
+    createToggle("Team Check", CuTins.AIMBOT.TEAM_CHECK, function(value)
+        CuTins.AIMBOT.TEAM_CHECK = value
+        updateStatus()
+    end, ScrollingFrame)
+    createToggle("Headshot Priority", CuTins.AIMBOT.HEADSHOT_PRIORITY, function(value)
+        CuTins.AIMBOT.HEADSHOT_PRIORITY = value
+        updateStatus()
+    end, ScrollingFrame)
+    createSlider("Aimbot FOV", CuTins.AIMBOT.FOV, 10, 200, function(value)
+        CuTins.AIMBOT.FOV = value
+        updateStatus()
+    end, ScrollingFrame)
+    createSlider("Smoothing", CuTins.AIMBOT.SMOOTHING * 100, 1, 100, function(value)
+        CuTins.AIMBOT.SMOOTHING = value / 100
+        updateStatus()
+    end, ScrollingFrame)
+
+    -- VISUALS SECTION
+    createSection("👁️ VISUALS", ScrollingFrame)
+    createToggle("ESP", CuTins.ESP.ENABLED, function(value)
+        CuTins.ESP.ENABLED = value
+        updateStatus()
+        if not value then cleanupESP() end
+    end, ScrollingFrame)
+    createToggle("Team ESP", CuTins.ESP.TEAM_CHECK, function(value)
+        CuTins.ESP.TEAM_CHECK = value
+        updateStatus()
+        cleanupESP()
+    end, ScrollingFrame)
+    createToggle("Box ESP", CuTins.ESP.BOX, function(value)
+        CuTins.ESP.BOX = value
+        updateStatus()
+    end, ScrollingFrame)
+    createToggle("Hitbox", CuTins.HITBOX.ENABLED, function(value)
+        CuTins.HITBOX.ENABLED = value
+        updateStatus()
+        updateHitboxes()
+    end, ScrollingFrame)
+    createSlider("Hitbox Size", CuTins.HITBOX.SIZE * 10, 10, 50, function(value)
+        CuTins.HITBOX.SIZE = value / 10
+        updateStatus()
+        updateHitboxes()
+    end, ScrollingFrame)
+
+    -- MOVEMENT SECTION
+    createSection("💨 MOVEMENT", ScrollingFrame)
+    createToggle("Fly", CuTins.FLY.ENABLED, function(value)
+        CuTins.FLY.ENABLED = value
+        updateStatus()
+        toggleFly()
+    end, ScrollingFrame)
+    createSlider("Fly Speed", CuTins.FLY.SPEED * 10, 10, 50, function(value)
+        CuTins.FLY.SPEED = value / 10
+        updateStatus()
+    end, ScrollingFrame)
+
+    -- STATUS SECTION
+    createSection("📊 STATUS", ScrollingFrame)
+    local StatusLabel = createStatusText("Aimbot: OFF", ScrollingFrame)
+    local ESPLabel = createStatusText("ESP: OFF", ScrollingFrame)
+    local PlayersLabel = createStatusText("Players: " .. #Players:GetPlayers(), ScrollingFrame)
+
+    -- Button Events
+    CloseButton.MouseButton1Click:Connect(function()
+        CuTins.UI_OPEN = false
+        SCREEN_GUI.Enabled = false
+    end)
+
+    MinimizeButton.MouseButton1Click:Connect(function()
+        CuTins.MINIMIZED = not CuTins.MINIMIZED
+        Content.Visible = not CuTins.MINIMIZED
+        if CuTins.MINIMIZED then
+            MAIN_FRAME.Size = UDim2.new(0, 400, 0, 50)
+            MinimizeButton.Text = "□"
+        else
+            MAIN_FRAME.Size = UDim2.new(0, 400, 0, 500)
+            MinimizeButton.Text = "_"
+        end
+    end)
+
+    -- Drag functionality
+    makeDraggable(MAIN_FRAME, Header)
+
+    -- Store status labels for updates
+    CuTins.StatusLabels = {
+        Aimbot = StatusLabel,
+        ESP = ESPLabel,
+        Players = PlayersLabel
+    }
+
+    return SCREEN_GUI
+end
+
+-- ✅ CREATE UI COMPONENTS
+function createSection(title, parent)
+    local Section = Instance.new("Frame")
+    Section.Name = title .. "Section"
+    Section.Size = UDim2.new(1, 0, 0, 30)
+    Section.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    Section.BorderSizePixel = 0
+    Section.Parent = parent
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 6)
+    Corner.Parent = Section
+
+    local Label = Instance.new("TextLabel")
+    Label.Name = "SectionLabel"
+    Label.Size = UDim2.new(1, -10, 1, 0)
+    Label.Position = UDim2.new(0, 10, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = title
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.TextSize = 14
+    Label.Font = Enum.Font.GothamBold
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Section
+
+    return Section
+end
+
+function createToggle(name, value, callback, parent)
+    local ToggleFrame = Instance.new("Frame")
+    ToggleFrame.Name = name .. "Toggle"
+    ToggleFrame.Size = UDim2.new(1, 0, 0, 30)
+    ToggleFrame.BackgroundTransparency = 1
+    ToggleFrame.Parent = parent
+
+    local Label = Instance.new("TextLabel")
+    Label.Name = "ToggleLabel"
+    Label.Size = UDim2.new(0.7, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = name
+    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Label.TextSize = 13
+    Label.Font = Enum.Font.Gotham
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = ToggleFrame
+
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Name = "ToggleButton"
+    ToggleButton.Size = UDim2.new(0, 50, 0, 25)
+    ToggleButton.Position = UDim2.new(1, -55, 0.5, -12.5)
+    ToggleButton.BackgroundColor3 = value and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+    ToggleButton.Text = value and "ON" or "OFF"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 11
+    ToggleButton.Font = Enum.Font.GothamBold
+    ToggleButton.Parent = ToggleFrame
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = ToggleButton
+
+    ToggleButton.MouseButton1Click:Connect(function()
+        local newValue = not value
+        ToggleButton.BackgroundColor3 = newValue and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+        ToggleButton.Text = newValue and "ON" or "OFF"
+        callback(newValue)
+    end)
+
+    return ToggleFrame
+end
+
+function createSlider(name, value, min, max, callback, parent)
+    local SliderFrame = Instance.new("Frame")
+    SliderFrame.Name = name .. "Slider"
+    SliderFrame.Size = UDim2.new(1, 0, 0, 50)
+    SliderFrame.BackgroundTransparency = 1
+    SliderFrame.Parent = parent
+
+    local Label = Instance.new("TextLabel")
+    Label.Name = "SliderLabel"
+    Label.Size = UDim2.new(1, 0, 0, 20)
+    Label.BackgroundTransparency = 1
+    Label.Text = name .. ": " .. value
+    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Label.TextSize = 13
+    Label.Font = Enum.Font.Gotham
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = SliderFrame
+
+    local Track = Instance.new("Frame")
+    Track.Name = "SliderTrack"
+    Track.Size = UDim2.new(1, 0, 0, 6)
+    Track.Position = UDim2.new(0, 0, 1, -20)
+    Track.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    Track.BorderSizePixel = 0
+    Track.Parent = SliderFrame
+
+    local TrackCorner = Instance.new("UICorner")
+    TrackCorner.CornerRadius = UDim.new(0, 3)
+    TrackCorner.Parent = Track
+
+    local Fill = Instance.new("Frame")
+    Fill.Name = "SliderFill"
+    Fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    Fill.BorderSizePixel = 0
+    Fill.Parent = Track
+
+    local FillCorner = Instance.new("UICorner")
+    FillCorner.CornerRadius = UDim.new(0, 3)
+    FillCorner.Parent = Fill
+
+    local Button = Instance.new("TextButton")
+    Button.Name = "SliderButton"
+    Button.Size = UDim2.new(0, 16, 0, 16)
+    Button.Position = UDim2.new((value - min) / (max - min), -8, 0.5, -8)
+    Button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Text = ""
+    Button.Parent = Track
+
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(1, 0)
+    ButtonCorner.Parent = Button
+
+    local dragging = false
+
+    Button.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = UserInputService:GetMouseLocation()
+            local trackAbsPos = Track.AbsolutePosition
+            local trackAbsSize = Track.AbsoluteSize
+            
+            local relativeX = (mousePos.X - trackAbsPos.X) / trackAbsSize.X
+            relativeX = math.clamp(relativeX, 0, 1)
+            
+            local newValue = math.floor(min + (relativeX * (max - min)))
+            
+            Fill.Size = UDim2.new(relativeX, 0, 1, 0)
+            Button.Position = UDim2.new(relativeX, -8, 0.5, -8)
+            Label.Text = name .. ": " .. newValue
+            
+            callback(newValue)
+        end
+    end)
+
+    return SliderFrame
+end
+
+function createStatusText(text, parent)
+    local StatusFrame = Instance.new("Frame")
+    StatusFrame.Name = "StatusFrame"
+    StatusFrame.Size = UDim2.new(1, 0, 0, 25)
+    StatusFrame.BackgroundTransparency = 1
+    StatusFrame.Parent = parent
+
+    local Label = Instance.new("TextLabel")
+    Label.Name = "StatusLabel"
+    Label.Size = UDim2.new(1, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = "• " .. text
+    Label.TextColor3 = Color3.fromRGB(150, 200, 255)
+    Label.TextSize = 12
+    Label.Font = Enum.Font.Gotham
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = StatusFrame
+
+    return Label
+end
+
+function makeDraggable(frame, handle)
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- ✅ UPDATE FUNCTIONS
+function updateStatus()
+    if CuTins.StatusLabels then
+        CuTins.StatusLabels.Aimbot.Text = "• Aimbot: " .. (CuTins.AIMBOT.ENABLED and "ON" or "OFF")
+        CuTins.StatusLabels.ESP.Text = "• ESP: " .. (CuTins.ESP.ENABLED and "ON" or "OFF")
+        CuTins.StatusLabels.Players.Text = "• Players: " .. #Players:GetPlayers()
+    end
+end
+
+-- ✅ CREATE WATERMARK
+function createWatermark()
+    local Watermark = Instance.new("Frame")
+    Watermark.Name = "Watermark"
+    Watermark.Size = UDim2.new(0, 180, 0, 30)
+    Watermark.Position = UDim2.new(1, -190, 0, 10)
+    Watermark.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    Watermark.BackgroundTransparency = 0.2
+    Watermark.BorderSizePixel = 0
+    Watermark.Parent = SCREEN_GUI
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 6)
+    Corner.Parent = Watermark
+
+    local Label = Instance.new("TextLabel")
+    Label.Name = "WatermarkLabel"
+    Label.Size = UDim2.new(1, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = "CuTins Heck 2025"
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.TextSize = 12
+    Label.Font = Enum.Font.GothamBold
+    Label.Parent = Watermark
+
+    makeDraggable(Watermark, Watermark)
+
+    return Watermark
+end
+
+-- ✅ GAME FUNCTIONALITY (giữ nguyên từ trước)
+function getClosestPlayer()
+    local closest = nil
+    local closestDist = CuTins.AIMBOT.FOV
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local char = player.Character
+            local humanoid = char:FindFirstChild("Humanoid")
+            local head = char:FindFirstChild("Head")
+            
+            if humanoid and humanoid.Health > 0 and head then
+                -- Team check
+                if CuTins.AIMBOT.TEAM_CHECK then
+                    local localTeam = LocalPlayer.Team
+                    local playerTeam = player.Team
+                    if localTeam and playerTeam and localTeam == playerTeam then
+                        continue
+                    end
+                end
+                
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                    if distance < closestDist then
+                        closestDist = distance
+                        closest = player
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+function aimAtTarget()
+    if not TARGET or not TARGET.Character then return end
+    local targetBone = TARGET.Character:FindFirstChild(CuTins.AIMBOT.TARGET_BONE)
+    if not targetBone then return end
+    
+    local currentCF = Camera.CFrame
+    local targetPos = targetBone.Position
+    
+    local rootPart = TARGET.Character:FindFirstChild("HumanoidRootPart")
+    if rootPart then
+        local distance = (targetPos - currentCF.Position).Magnitude
+        local travelTime = distance / 1000
+        targetPos = targetPos + (rootPart.Velocity * travelTime)
+    end
+    
+    local direction = (targetPos - currentCF.Position).Unit
+    local smoothDirection = currentCF.LookVector:Lerp(direction, CuTins.AIMBOT.SMOOTHING)
+    Camera.CFrame = CFrame.new(currentCF.Position, currentCF.Position + smoothDirection)
+end
+
+function createESP(player)
+    if player == LocalPlayer then return end
+    
+    -- Team check for ESP
+    if CuTins.ESP.TEAM_CHECK then
+        local localTeam = LocalPlayer.Team
+        local playerTeam = player.Team
+        if localTeam and playerTeam and localTeam == playerTeam then
+            return
+        end
+    end
+    
+    local char = player.Character
+    if not char then return end
+    
+    -- Remove old ESP
+    if ESP_ITEMS[player] then
+        for _, item in pairs(ESP_ITEMS[player]) do
+            item:Destroy()
+        end
+    end
+    
+    ESP_ITEMS[player] = {}
+    
+    if CuTins.ESP.ENABLED then
+        local highlight = Instance.new("Highlight")
+        highlight.FillColor = Color3.fromRGB(255, 50, 50)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.FillTransparency = 0.7
+        highlight.Parent = char
+        table.insert(ESP_ITEMS[player], highlight)
+    end
+end
+
+function cleanupESP()
+    for player, items in pairs(ESP_ITEMS) do
+        for _, item in pairs(items) do
+            item:Destroy()
+        end
+    end
+    ESP_ITEMS = {}
+end
+
+function updateHitboxes()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local char = player.Character
+            for _, part in pairs(char:GetDescendants()) do
+                if part.Name == "CUTINS_HITBOX" then
+                    part:Destroy()
+                end
+            end
+            
+            if CuTins.HITBOX.ENABLED then
+                local head = char:FindFirstChild("Head")
+                if head then
+                    local hitbox = Instance.new("Part")
+                    hitbox.Name = "CUTINS_HITBOX"
+                    hitbox.Size = head.Size * CuTins.HITBOX.SIZE
+                    hitbox.Transparency = 1
+                    hitbox.CanCollide = false
+                    hitbox.Parent = head
+                    
+                    local weld = Instance.new("Weld")
+                    weld.Part0 = head
+                    weld.Part1 = hitbox
+                    weld.C0 = CFrame.new()
+                    weld.Parent = hitbox
+                end
+            end
+        end
+    end
+end
+
+function toggleFly()
+    if not CuTins.FLY.ENABLED then
+        if BODYGYRO then BODYGYRO:Destroy() end
+        if BODYVELOCITY then BODYVELOCITY:Destroy() end
+        FLYING = false
+        return
+    end
+    
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    BODYGYRO = Instance.new("BodyGyro")
+    BODYGYRO.P = 1000
+    BODYGYRO.D = 50
+    BODYGYRO.MaxTorque = Vector3.new(4000, 4000, 4000)
+    BODYGYRO.CFrame = rootPart.CFrame
+    BODYGYRO.Parent = rootPart
+    
+    BODYVELOCITY = Instance.new("BodyVelocity")
+    BODYVELOCITY.Velocity = Vector3.new(0, 0, 0)
+    BODYVELOCITY.MaxForce = Vector3.new(4000, 4000, 4000)
+    BODYVELOCITY.Parent = rootPart
+    
+    FLYING = true
+end
+
+-- ✅ INPUT HANDLING
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    
+    -- Toggle UI with Insert key
+    if input.KeyCode == Enum.KeyCode.Insert then
+        CuTins.UI_OPEN = not CuTins.UI_OPEN
+        SCREEN_GUI.Enabled = CuTins.UI_OPEN
+    end
+    
+    -- Aimbot with left click
+    if input.UserInputType == CuTins.AIMBOT.MOUSE_BUTTON and CuTins.AIMBOT.ENABLED then
+        TARGET = getClosestPlayer()
+    end
+    
+    -- Fly toggle with F key
+    if input.KeyCode == Enum.KeyCode.F then
+        CuTins.FLY.ENABLED = not CuTins.FLY.ENABLED
+        toggleFly()
+        updateStatus()
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, processed)
+    if processed then return end
+    
+    if input.UserInputType == CuTins.AIMBOT.MOUSE_BUTTON then
+        TARGET = nil
+    end
+end)
+
+-- ✅ MAIN LOOP
+RunService.RenderStepped:Connect(function()
+    -- Aimbot
+    if CuTins.AIMBOT.ENABLED and TARGET then
+        aimAtTarget()
+    end
+    
+    -- ESP
+    if CuTins.ESP.ENABLED then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and not ESP_ITEMS[player] then
+                createESP(player)
+            end
+        end
+    end
+end)
+
+-- ✅ INITIALIZE HUB
+createHubInterface()
+createWatermark()
+updateStatus()
+
+-- Player tracking
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer and CuTins.ESP.ENABLED and player.Character then
+        createESP(player)
+    end
+    player.CharacterAdded:Connect(function(char)
+        wait(1)
+        if CuTins.ESP.ENABLED then
+            createESP(player)
+        end
+    end)
+end
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(char)
+        wait(1)
+        if CuTins.ESP.ENABLED then
+            createESP(player)
+        end
+    end)
+end)
+
+-- Update player count periodically
+coroutine.wrap(function()
+    while CuTins.ACTIVE do
+        wait(5)
+        if CuTins.StatusLabels then
+            CuTins.StatusLabels.Players.Text = "• Players: " .. #Players:GetPlayers()
+        end
+    end
+end)()
+
+print([[
+
+ ██████ ██    ██ ████████ ██ ███    ██ ██████
+██      ██    ██    ██    ██ ████   ██ ██
+██      ██    ██    ██    ██ ██ ██  ██ ██████
+██      ██    ██    ██    ██ ██  ██ ██     ██
+ ██████  ██████     ██    ██ ██   ████ ██████
+                                                 
+            Heck 2025 - CuTins © 2025
+
+🎮 CuTins Heck ĐÃ ĐƯỢC KÍCH HOẠT!
+
+📱 GIAO DIỆN ĐÃ HIỂN THỊ:
+• Hub chính ở góc trái màn hình
+• Watermark ở góc phải trên
+
+⌨️ ĐIỀU KHIỂN HUB:
+• INSERT - Ẩn/hiện hub
+• _     - Thu gọn/mở rộng
+• X     - Đóng hub
+• F     - Bật/tắt bay
+• Chuột trái - Aimbot (khi bật)
+
+🎯 TÍNH NĂNG:
+• Aimbot với Team Check & Headshot Priority
+• ESP chỉ hiện team địch
+• Hitbox mở rộng  
+• Fly mode di chuyển
+• Status real-time
+
+]])
+
+-- Keep script running
+while CuTins.ACTIVE do
+    wait(1)
+end
