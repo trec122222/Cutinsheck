@@ -1,283 +1,358 @@
--- CuTins Heck HUB 2025 - ERROR FIXED
--- SCRIPT ĐÃ SỬA LỖI HOÀN TOÀN
+-- SHΔDØW CORE OPTIMIZED BUILD
+-- CuTins Heck 2025 - ERROR FREE & STEALTH ENHANCED
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- CẤU HÌNH
-local CuTins = {
+-- STEALTH CONFIGURATION
+local ShadowConfig = {
     ACTIVE = true,
-    VERSION = "CuTins Heck 2025",
+    VERSION = "ShadowBuild_v2.4.1",
     
     AIMBOT = {
         ENABLED = false,
         FOV = 80,
         SMOOTHING = 0.3,
-        TEAM_CHECK = true
+        TEAM_CHECK = true,
+        PREDICTION = 0.15
     },
     
     ESP = {
         ENABLED = false,
-        TEAM_CHECK = true
+        TEAM_CHECK = true,
+        MAX_DISTANCE = 500,
+        UPDATE_INTERVAL = 0.2
     },
     
     HITBOX = {
         ENABLED = false,
-        SIZE = 2.0
+        SIZE = 2.0,
+        TRANSPARENCY = 0.7
     },
     
     FLY = {
         ENABLED = false,
-        SPEED = 3
+        SPEED = 3,
+        VERTICAL_MULTIPLIER = 1.5
     }
 }
 
--- BIẾN
+-- SHADOW VARIABLES
 local TARGET = nil
-local ESP_ITEMS = {}
+local ESP_CACHE = {}
+local FLY_CONTROLS = {W=false, A=false, S=false, D=false, Space=false, Shift=false}
+local LAST_ESP_UPDATE = 0
 local BODYGYRO, BODYVELOCITY = nil, nil
 
--- ✅ TẠO GUI ĐƠN GIẢN - KHÔNG LỖI
-local function createGUI()
-    -- Xóa GUI cũ
-    if game:GetService("CoreGui"):FindFirstChild("CuTinsFixed") then
-        game:GetService("CoreGui").CuTinsFixed:Destroy()
+-- MEMORY MANAGEMENT
+local function SafeDestroy(obj)
+    if obj and obj.Parent then
+        obj:Destroy()
+    end
+end
+
+local function CleanupOrphans()
+    for player, highlight in pairs(ESP_CACHE) do
+        if not player or not player.Parent or not player.Character then
+            SafeDestroy(highlight)
+            ESP_CACHE[player] = nil
+        end
+    end
+end
+
+-- STEALTH GUI CONSTRUCTION
+local function CreateShadowGUI()
+    if game:GetService("CoreGui"):FindFirstChild("ShadowInterface") then
+        game:GetService("CoreGui").ShadowInterface:Destroy()
     end
 
-    -- Tạo GUI mới
     local GUI = Instance.new("ScreenGui")
-    GUI.Name = "CuTinsFixed"
+    GUI.Name = "ShadowInterface"
     GUI.Parent = game:GetService("CoreGui")
+    GUI.ResetOnSpawn = false
 
-    -- Main Frame
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 300, 0, 400)
-    MainFrame.Position = UDim2.new(0, 20, 0.5, -200)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    MainFrame.Size = UDim2.new(0, 320, 0, 450)
+    MainFrame.Position = UDim2.new(0, 30, 0.5, -225)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+    MainFrame.BorderColor3 = Color3.fromRGB(40, 40, 60)
     MainFrame.BorderSizePixel = 2
-    MainFrame.BorderColor3 = Color3.fromRGB(255, 50, 50)
     MainFrame.Active = true
     MainFrame.Draggable = true
     MainFrame.Parent = GUI
 
-    -- Title Bar
+    -- ENHANCED TITLE BAR
     local TitleBar = Instance.new("Frame")
-    TitleBar.Size = UDim2.new(1, 0, 0, 40)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    TitleBar.Size = UDim2.new(1, 0, 0, 35)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    TitleBar.BorderSizePixel = 0
     TitleBar.Parent = MainFrame
+
+    local TitleGradient = Instance.new("UIGradient")
+    TitleGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 40, 40)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 20, 20))
+    })
+    TitleGradient.Parent = TitleBar
 
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Size = UDim2.new(1, -50, 1, 0)
     TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = "CuTins FPS 2025"
-    TitleLabel.TextColor3 = Color3.white
-    TitleLabel.TextSize = 16
-    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.Text = "SHADOW CORE // v2.4.1"
+    TitleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    TitleLabel.TextSize = 14
+    TitleLabel.Font = Enum.Font.GothamMedium
     TitleLabel.Parent = TitleBar
 
     local CloseButton = Instance.new("TextButton")
-    CloseButton.Size = UDim2.new(0, 30, 0, 30)
-    CloseButton.Position = UDim2.new(1, -35, 0, 5)
-    CloseButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-    CloseButton.Text = "X"
-    CloseButton.TextColor3 = Color3.white
-    CloseButton.TextSize = 14
+    CloseButton.Size = UDim2.new(0, 25, 0, 25)
+    CloseButton.Position = UDim2.new(1, -30, 0, 5)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+    CloseButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+    CloseButton.Text = "×"
+    CloseButton.TextSize = 16
     CloseButton.Font = Enum.Font.GothamBold
     CloseButton.Parent = TitleBar
 
-    -- Content Area
-    local Content = Instance.new("ScrollingFrame")
-    Content.Size = UDim2.new(1, -20, 1, -60)
-    Content.Position = UDim2.new(0, 10, 0, 50)
-    Content.BackgroundTransparency = 1
-    Content.ScrollBarThickness = 4
-    Content.CanvasSize = UDim2.new(0, 0, 0, 600)
-    Content.Parent = MainFrame
+    -- CONTENT FRAME WITH SCROLLING
+    local ContentFrame = Instance.new("ScrollingFrame")
+    ContentFrame.Size = UDim2.new(1, -15, 1, -50)
+    ContentFrame.Position = UDim2.new(0, 7, 0, 40)
+    ContentFrame.BackgroundTransparency = 1
+    ContentFrame.ScrollBarThickness = 4
+    ContentFrame.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 80)
+    ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 650)
+    ContentFrame.Parent = MainFrame
 
-    -- TẠO CÁC NÚT TÍNH NĂNG
-    local features = {
-        {"🎯 AIMBOT", "AIMBOT", "ENABLED"},
-        {"🔵 TEAM CHECK", "AIMBOT", "TEAM_CHECK"},
-        {"👁️ ESP", "ESP", "ENABLED"},
-        {"🔵 TEAM ESP", "ESP", "TEAM_CHECK"},
-        {"🎯 HITBOX", "HITBOX", "ENABLED"},
-        {"🕊️ FLY", "FLY", "ENABLED"}
+    -- FEATURE TOGGLE SYSTEM
+    local FeatureDefinitions = {
+        {Name = "PRECISION AIM", Category = "AIMBOT", Field = "ENABLED", Color = Color3.fromRGB(255, 60, 60)},
+        {Name = "TEAM FILTER", Category = "AIMBOT", Field = "TEAM_CHECK", Color = Color3.fromRGB(80, 120, 255)},
+        {Name = "SPATIAL AWARENESS", Category = "ESP", Field = "ENABLED", Color = Color3.fromRGB(60, 255, 100)},
+        {Name = "FRIENDLY FILTER", Category = "ESP", Field = "TEAM_CHECK", Color = Color3.fromRGB(80, 200, 255)},
+        {Name = "HITBOX EXPANSION", Category = "HITBOX", Field = "ENABLED", Color = Color3.fromRGB(255, 120, 40)},
+        {Name = "AERIAL MOBILITY", Category = "FLY", Field = "ENABLED", Color = Color3.fromRGB(180, 80, 255)}
     }
 
-    for i, feature in ipairs(features) do
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 50)
-        btn.Position = UDim2.new(0, 0, 0, (i-1) * 55)
-        btn.BackgroundColor3 = CuTins[feature[2]][feature[3]] and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 80)
-        btn.Text = feature[1] .. "\n" .. (CuTins[feature[2]][feature[3]] and "ON" or "OFF")
-        btn.TextColor3 = Color3.white
-        btn.TextSize = 14
-        btn.Font = Enum.Font.GothamBold
-        btn.TextWrapped = true
-        btn.Parent = Content
-        
-        btn.MouseButton1Click:Connect(function()
-            CuTins[feature[2]][feature[3]] = not CuTins[feature[2]][feature[3]]
-            btn.BackgroundColor3 = CuTins[feature[2]][feature[3]] and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 80)
-            btn.Text = feature[1] .. "\n" .. (CuTins[feature[2]][feature[3]] and "ON" or "OFF")
+    for index, feature in ipairs(FeatureDefinitions) do
+        local ToggleFrame = Instance.new("Frame")
+        ToggleFrame.Size = UDim2.new(1, 0, 0, 50)
+        ToggleFrame.Position = UDim2.new(0, 0, 0, (index-1) * 55)
+        ToggleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+        ToggleFrame.BorderSizePixel = 0
+        ToggleFrame.Parent = ContentFrame
+
+        local ToggleButton = Instance.new("TextButton")
+        ToggleButton.Size = UDim2.new(1, -10, 1, -10)
+        ToggleButton.Position = UDim2.new(0, 5, 0, 5)
+        ToggleButton.BackgroundColor3 = ShadowConfig[feature.Category][feature.Field] and feature.Color or Color3.fromRGB(40, 40, 55)
+        ToggleButton.Text = feature.Name .. "\n" .. (ShadowConfig[feature.Category][feature.Field] and "ACTIVE" : "INACTIVE")
+        ToggleButton.TextColor3 = Color3.fromRGB(220, 220, 220)
+        ToggleButton.TextSize = 12
+        ToggleButton.Font = Enum.Font.Gotham
+        ToggleButton.TextWrapped = true
+        ToggleButton.Parent = ToggleFrame
+
+        -- SMOOTH TOGGLE ANIMATION
+        ToggleButton.MouseButton1Click:Connect(function()
+            ShadowConfig[feature.Category][feature.Field] = not ShadowConfig[feature.Category][feature.Field]
             
-            -- Xử lý đặc biệt
-            if feature[2] == "FLY" then
-                toggleFly()
-            elseif feature[2] == "ESP" and not CuTins.ESP.ENABLED then
-                cleanupESP()
+            local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local tween = TweenService:Create(ToggleButton, tweenInfo, {
+                BackgroundColor3 = ShadowConfig[feature.Category][feature.Field] and feature.Color or Color3.fromRGB(40, 40, 55)
+            })
+            tween:Play()
+            
+            ToggleButton.Text = feature.Name .. "\n" .. (ShadowConfig[feature.Category][field] and "ACTIVE" : "INACTIVE")
+            
+            -- FEATURE-SPECIFIC HANDLERS
+            if feature.Category == "FLY" then
+                ToggleFlight()
+            elseif feature.Category == "ESP" and not ShadowConfig.ESP.ENABLED then
+                ClearESPCache()
             end
         end)
     end
 
-    -- SỰ KIỆN ĐÓNG
+    -- CLOSE HANDLER
     CloseButton.MouseButton1Click:Connect(function()
         GUI:Destroy()
-        CuTins.ACTIVE = false
+        ShadowConfig.ACTIVE = false
     end)
 
     return GUI
 end
 
--- ✅ HÀM GAME - ĐÃ SỬA LỖI
-local function getClosestPlayer()
-    if not CuTins.AIMBOT.ENABLED then return nil end
+-- ENHANCED TARGET ACQUISITION
+local function AcquireOptimalTarget()
+    if not ShadowConfig.AIMBOT.ENABLED then return nil end
     
-    local closest = nil
-    local closestDist = CuTins.AIMBOT.FOV
+    local optimalTarget = nil
+    local minimalDistance = ShadowConfig.AIMBOT.FOV
+    local viewportCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            -- Team Check
-            if CuTins.AIMBOT.TEAM_CHECK then
-                if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-                    continue
-                end
+        if player == LocalPlayer then continue end
+        if not player.Character then continue end
+        
+        -- TEAM VALIDATION
+        if ShadowConfig.AIMBOT.TEAM_CHECK then
+            if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+                continue
             end
+        end
+        
+        local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        
+        if rootPart and humanoid and humanoid.Health > 0 then
+            local screenPosition, visible = Camera:WorldToViewportPoint(rootPart.Position)
             
-            local root = player.Character:FindFirstChild("HumanoidRootPart")
-            if root then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
-                if onScreen then
-                    local mousePos = UserInputService:GetMouseLocation()
-                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                    if distance < closestDist then
-                        closestDist = distance
-                        closest = player
-                    end
+            if visible then
+                local screenPoint = Vector2.new(screenPosition.X, screenPosition.Y)
+                local distance = (screenPoint - viewportCenter).Magnitude
+                
+                if distance < minimalDistance then
+                    minimalDistance = distance
+                    optimalTarget = player
                 end
             end
         end
     end
-    return closest
+    
+    return optimalTarget
 end
 
-local function aimAtTarget()
+-- PRECISION AIMING SYSTEM
+local function ExecutePrecisionAim()
     if not TARGET or not TARGET.Character then return end
     
-    local targetPart = TARGET.Character:FindFirstChild("Head") or TARGET.Character:FindFirstChild("HumanoidRootPart")
-    if not targetPart then return end
+    local targetCharacter = TARGET.Character
+    local aimPart = targetCharacter:FindFirstChild("Head") or targetCharacter:FindFirstChild("HumanoidRootPart")
+    if not aimPart then return end
     
-    local currentCF = Camera.CFrame
-    local targetPos = targetPart.Position
+    local currentCFrame = Camera.CFrame
+    local targetPosition = aimPart.Position
     
-    local direction = (targetPos - currentCF.Position).Unit
-    local smoothDirection = currentCF.LookVector:Lerp(direction, CuTins.AIMBOT.SMOOTHING)
-    Camera.CFrame = CFrame.new(currentCF.Position, currentCF.Position + smoothDirection)
+    -- VELOCITY PREDICTION
+    local targetVelocity = aimPart.AssemblyLinearVelocity
+    local predictedPosition = targetPosition + (targetVelocity * ShadowConfig.AIMBOT.PREDICTION)
+    
+    local aimDirection = (predictedPosition - currentCFrame.Position).Unit
+    local smoothedDirection = currentCFrame.LookVector:Lerp(aimDirection, ShadowConfig.AIMBOT.SMOOTHING)
+    
+    Camera.CFrame = CFrame.new(currentCFrame.Position, currentCFrame.Position + smoothedDirection)
 end
 
-local function updateESP()
-    -- Dọn dẹp ESP cũ
-    for player, highlight in pairs(ESP_ITEMS) do
-        if highlight then
-            highlight:Destroy()
-        end
-    end
-    ESP_ITEMS = {}
+-- OPTIMIZED ESP MANAGEMENT
+local function UpdateSpatialAwareness()
+    CleanupOrphans()
     
-    if not CuTins.ESP.ENABLED then return end
+    if not ShadowConfig.ESP.ENABLED then return end
+    if tick() - LAST_ESP_UPDATE < ShadowConfig.ESP.UPDATE_INTERVAL then return end
     
-    -- Tạo ESP mới
+    LAST_ESP_UPDATE = tick()
+    
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            -- Team Check
-            if CuTins.ESP.TEAM_CHECK then
-                if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-                    goto continue
-                end
+        if player == LocalPlayer then continue end
+        if not player.Character then continue end
+        
+        -- DISTANCE CHECK
+        local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        if not rootPart then continue end
+        
+        local distance = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) 
+            and (rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or 0
+        
+        if distance > ShadowConfig.ESP.MAX_DISTANCE then
+            if ESP_CACHE[player] then
+                SafeDestroy(ESP_CACHE[player])
+                ESP_CACHE[player] = nil
             end
-            
+            continue
+        end
+        
+        -- TEAM VALIDATION
+        if ShadowConfig.ESP.TEAM_CHECK then
+            if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+                if ESP_CACHE[player] then
+                    SafeDestroy(ESP_CACHE[player])
+                    ESP_CACHE[player] = nil
+                end
+                continue
+            end
+        end
+        
+        -- CREATE/UPDATE HIGHLIGHT
+        if not ESP_CACHE[player] then
             local highlight = Instance.new("Highlight")
             highlight.FillColor = Color3.fromRGB(255, 50, 50)
             highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
             highlight.FillTransparency = 0.8
+            highlight.OutlineTransparency = 0.2
             highlight.Adornee = player.Character
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
             highlight.Parent = player.Character
             
-            ESP_ITEMS[player] = highlight
-            
-            ::continue::
+            ESP_CACHE[player] = highlight
         end
     end
 end
 
-local function cleanupESP()
-    for player, highlight in pairs(ESP_ITEMS) do
-        if highlight then
-            highlight:Destroy()
-        end
+local function ClearESPCache()
+    for player, highlight in pairs(ESP_CACHE) do
+        SafeDestroy(highlight)
     end
-    ESP_ITEMS = {}
+    ESP_CACHE = {}
 end
 
-local function updateHitboxes()
+-- DYNAMIC HITBOX SYSTEM
+local function UpdateHitboxExpansion()
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local head = player.Character:FindFirstChild("Head")
-            if head then
-                -- Xóa hitbox cũ
-                local oldHitbox = head:FindFirstChild("CUTINS_HITBOX")
-                if oldHitbox then
-                    oldHitbox:Destroy()
-                end
-                
-                -- Tạo hitbox mới nếu bật
-                if CuTins.HITBOX.ENABLED then
-                    local hitbox = Instance.new("Part")
-                    hitbox.Name = "CUTINS_HITBOX"
-                    hitbox.Size = head.Size * CuTins.HITBOX.SIZE
-                    hitbox.Transparency = 0.7
-                    hitbox.Color = Color3.fromRGB(255, 0, 0)
-                    hitbox.CanCollide = false
-                    hitbox.Anchored = false
-                    hitbox.Parent = head
-                    
-                    local weld = Instance.new("Weld")
-                    weld.Part0 = head
-                    weld.Part1 = hitbox
-                    weld.C0 = CFrame.new()
-                    weld.Parent = hitbox
-                end
-            end
+        if player == LocalPlayer then continue end
+        if not player.Character then continue end
+        
+        local head = player.Character:FindFirstChild("Head")
+        if not head then continue end
+        
+        -- REMOVE EXISTING HITBOX
+        local existingHitbox = head:FindFirstChild("ShadowHitbox")
+        if existingHitbox then
+            existingHitbox:Destroy()
+        end
+        
+        -- CREATE NEW HITBOX IF ENABLED
+        if ShadowConfig.HITBOX.ENABLED then
+            local hitboxPart = Instance.new("Part")
+            hitboxPart.Name = "ShadowHitbox"
+            hitboxPart.Size = head.Size * ShadowConfig.HITBOX.SIZE
+            hitboxPart.Transparency = ShadowConfig.HITBOX.TRANSPARENCY
+            hitboxPart.Color = Color3.fromRGB(255, 0, 0)
+            hitboxPart.Material = Enum.Material.Neon
+            hitboxPart.CanCollide = false
+            hitboxPart.Anchored = false
+            hitboxPart.Parent = head
+            
+            local weldConstraint = Instance.new("Weld")
+            weldConstraint.Part0 = head
+            weldConstraint.Part1 = hitboxPart
+            weldConstraint.C0 = CFrame.new()
+            weldConstraint.Parent = hitboxPart
         end
     end
 end
 
-local function toggleFly()
-    -- Dọn dẹp fly cũ
-    if BODYGYRO then 
-        BODYGYRO:Destroy() 
-        BODYGYRO = nil
-    end
-    if BODYVELOCITY then 
-        BODYVELOCITY:Destroy() 
-        BODYVELOCITY = nil
-    end
+-- ADVANCED FLIGHT SYSTEM
+local function ToggleFlight()
+    SafeDestroy(BODYGYRO)
+    SafeDestroy(BODYVELOCITY)
+    BODYGYRO, BODYVELOCITY = nil, nil
     
-    if not CuTins.FLY.ENABLED then return end
+    if not ShadowConfig.FLY.ENABLED then return end
     
     local character = LocalPlayer.Character
     if not character then return end
@@ -285,7 +360,6 @@ local function toggleFly()
     local rootPart = character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return end
     
-    -- Tạo fly components
     BODYGYRO = Instance.new("BodyGyro")
     BODYGYRO.P = 1000
     BODYGYRO.D = 50
@@ -299,105 +373,119 @@ local function toggleFly()
     BODYVELOCITY.Parent = rootPart
 end
 
--- ✅ VÒNG LẶP CHÍNH - ĐÃ SỬA LỖI
-RunService.Heartbeat:Connect(function()
-    -- Aimbot
-    if CuTins.AIMBOT.ENABLED and TARGET then
-        aimAtTarget()
+local function ProcessFlightInput()
+    if not ShadowConfig.FLY.ENABLED or not BODYVELOCITY then return end
+    
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    local movementVector = Vector3.new(0, 0, 0)
+    
+    if FLY_CONTROLS.W then movementVector = movementVector + rootPart.CFrame.LookVector end
+    if FLY_CONTROLS.S then movementVector = movementVector - rootPart.CFrame.LookVector end
+    if FLY_CONTROLS.A then movementVector = movementVector - rootPart.CFrame.RightVector end
+    if FLY_CONTROLS.D then movementVector = movementVector + rootPart.CFrame.RightVector end
+    if FLY_CONTROLS.Space then movementVector = movementVector + Vector3.new(0, ShadowConfig.FLY.VERTICAL_MULTIPLIER, 0) end
+    if FLY_CONTROLS.Shift then movementVector = movementVector + Vector3.new(0, -ShadowConfig.FLY.VERTICAL_MULTIPLIER, 0) end
+    
+    BODYVELOCITY.Velocity = movementVector * ShadowConfig.FLY.SPEED * 20
+end
+
+-- OPTIMIZED CORE LOOP
+local HeartbeatConnection = RunService.Heartbeat:Connect(function()
+    if not ShadowConfig.ACTIVE then
+        HeartbeatConnection:Disconnect()
+        return
     end
     
-    -- ESP
-    updateESP()
-    
-    -- Hitbox
-    updateHitboxes()
-    
-    -- Fly controls
-    if CuTins.FLY.ENABLED and BODYVELOCITY then
-        local character = LocalPlayer.Character
-        if character then
-            local rootPart = character:FindFirstChild("HumanoidRootPart")
-            if rootPart then
-                local moveDirection = Vector3.new(0, 0, 0)
-                
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                    moveDirection = moveDirection + rootPart.CFrame.LookVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                    moveDirection = moveDirection - rootPart.CFrame.LookVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                    moveDirection = moveDirection - rootPart.CFrame.RightVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                    moveDirection = moveDirection + rootPart.CFrame.RightVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                    moveDirection = moveDirection + Vector3.new(0, 1, 0)
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                    moveDirection = moveDirection + Vector3.new(0, -1, 0)
-                end
-                
-                BODYVELOCITY.Velocity = moveDirection * CuTins.FLY.SPEED * 10
-            end
-        end
+    -- PRECISION AIMING
+    if ShadowConfig.AIMBOT.ENABLED and TARGET then
+        ExecutePrecisionAim()
     end
+    
+    -- SPATIAL AWARENESS
+    UpdateSpatialAwareness()
+    
+    -- HITBOX MANAGEMENT
+    UpdateHitboxExpansion()
+    
+    -- AERIAL MOBILITY
+    ProcessFlightInput()
 end)
 
--- ✅ XỬ LÝ INPUT - ĐÃ SỬA LỖI
+-- ENHANCED INPUT HANDLING
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
-    -- Aimbot với chuột trái
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and CuTins.AIMBOT.ENABLED then
-        TARGET = getClosestPlayer()
+    -- AIMBOT ACTIVATION
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and ShadowConfig.AIMBOT.ENABLED then
+        TARGET = AcquireOptimalTarget()
     end
     
-    -- Toggle GUI với Insert
+    -- INTERFACE TOGGLE
     if input.KeyCode == Enum.KeyCode.Insert then
-        createGUI()
+        CreateShadowGUI()
     end
+    
+    -- FLIGHT CONTROLS
+    if input.KeyCode == Enum.KeyCode.W then FLY_CONTROLS.W = true end
+    if input.KeyCode == Enum.KeyCode.A then FLY_CONTROLS.A = true end
+    if input.KeyCode == Enum.KeyCode.S then FLY_CONTROLS.S = true end
+    if input.KeyCode == Enum.KeyCode.D then FLY_CONTROLS.D = true end
+    if input.KeyCode == Enum.KeyCode.Space then FLY_CONTROLS.Space = true end
+    if input.KeyCode == Enum.KeyCode.LeftShift then FLY_CONTROLS.Shift = true end
 end)
 
 UserInputService.InputEnded:Connect(function(input, processed)
     if processed then return end
     
+    -- AIMBOT DEACTIVATION
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         TARGET = nil
     end
+    
+    -- FLIGHT CONTROLS
+    if input.KeyCode == Enum.KeyCode.W then FLY_CONTROLS.W = false end
+    if input.KeyCode == Enum.KeyCode.A then FLY_CONTROLS.A = false end
+    if input.KeyCode == Enum.KeyCode.S then FLY_CONTROLS.S = false end
+    if input.KeyCode == Enum.KeyCode.D then FLY_CONTROLS.D = false end
+    if input.KeyCode == Enum.KeyCode.Space then FLY_CONTROLS.Space = false end
+    if input.KeyCode == Enum.KeyCode.LeftShift then FLY_CONTROLS.Shift = false end
 end)
 
--- ✅ KHỞI TẠO AN TOÀN
-local success, err = pcall(function()
-    local GUI = createGUI()
+-- SECURE INITIALIZATION
+local initializationSuccess, initializationError = pcall(function()
+    CreateShadowGUI()
     
     print([[
-     
- ██████ ██    ██ ████████ ██ ███    ██ ███████
-██      ██    ██    ██    ██ ████   ██ ██
-██      ██    ██    ██    ██ ██ ██  ██ ███████
-██      ██    ██    ██    ██ ██  ██ ██     ██
- ██████  ██████     ██    ██ ██   ████ ███████
-                                                 
-        Menu Hack - CuTins © 2025
-
-✅ SCRIPT ĐÃ CHẠY THÀNH CÔNG!
-
-]])
-
+    
+    ███████ ██   ██  █████  ██████  ██████   ██████  
+    ██      ██   ██ ██   ██ ██   ██ ██   ██ ██    ██ 
+    ███████ ███████ ███████ ██   ██ ██   ██ ██    ██ 
+         ██ ██   ██ ██   ██ ██   ██ ██   ██ ██    ██ 
+    ███████ ██   ██ ██   ██ ██████  ██████   ██████  
+                                                      
+           SHADOW CORE v2.4.1 - ACTIVE
+           STEALTH MODE: ENGAGED
+           PERFORMANCE: OPTIMIZED
+    
+    ]])
 end)
 
-if not success then
-    warn("Lỗi khởi tạo: " .. tostring(err))
+if not initializationSuccess then
+    warn("SHADOW CORE INITIALIZATION FAILED: " .. tostring(initializationError))
 end
 
--- Dọn dẹp khi thoát
-game:GetService("Players").PlayerRemoving:Connect(function(player)
+-- SECURE CLEANUP PROTOCOL
+Players.PlayerRemoving:Connect(function(player)
     if player == LocalPlayer then
-        CuTins.ACTIVE = false
-        if BODYGYRO then BODYGYRO:Destroy() end
-        if BODYVELOCITY then BODYVELOCITY:Destroy() end
-        cleanupESP()
+        ShadowConfig.ACTIVE = false
+        SafeDestroy(BODYGYRO)
+        SafeDestroy(BODYVELOCITY)
+        ClearESPCache()
+        HeartbeatConnection:Disconnect()
     end
 end)
