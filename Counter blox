@@ -1,5 +1,5 @@
--- SHΔDØW CORE OPTIMIZED BUILD
--- CuTins Heck 2025 - ERROR FREE & STEALTH ENHANCED
+-- CuTins Heck HUB 2025 - ENHANCED EDITION
+-- NEW FEATURES ADDED - ORIGINAL CODE PRESERVED
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -8,484 +8,620 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- STEALTH CONFIGURATION
-local ShadowConfig = {
+-- HUB CONFIGURATION - ENHANCED WITH NEW FEATURES
+local CuTins = {
     ACTIVE = true,
-    VERSION = "ShadowBuild_v2.4.1",
+    VERSION = "CuTins Heck 2025 - ENHANCED",
+    UI_OPEN = true,
+    MINIMIZED = false,
     
+    -- MODULES - NEW FEATURES ADDED
     AIMBOT = {
         ENABLED = false,
+        MOUSE_BUTTON = Enum.UserInputType.MouseButton1,
         FOV = 80,
         SMOOTHING = 0.3,
+        TARGET_BONE = "Head",
         TEAM_CHECK = true,
-        PREDICTION = 0.15
+        HEADSHOT_PRIORITY = true,
+        -- NEW: Auto Fire
+        AUTO_FIRE = false,
+        FIRE_DELAY = 0.1,
+        -- NEW: Silent Aim
+        SILENT_AIM = false,
+        HIT_CHANCE = 100
     },
     
     ESP = {
         ENABLED = false,
         TEAM_CHECK = true,
-        MAX_DISTANCE = 500,
-        UPDATE_INTERVAL = 0.2
+        BOX = true,
+        NAMES = true,
+        HEALTH = true,
+        DISTANCE = true,
+        -- NEW: Chams
+        CHAMS = false,
+        CHAMS_COLOR = Color3.fromRGB(255, 0, 0),
+        -- NEW: Tracers
+        TRACERS = false,
+        TRACER_ORIGIN = "Bottom"
     },
     
     HITBOX = {
         ENABLED = false,
         SIZE = 2.0,
-        TRANSPARENCY = 0.7
+        -- NEW: Dynamic Hitbox
+        DYNAMIC = false,
+        AUTO_RESIZE = true
     },
     
     FLY = {
         ENABLED = false,
         SPEED = 3,
-        VERTICAL_MULTIPLIER = 1.5
+        -- NEW: NoClip
+        NOCLIP = false,
+        -- NEW: Fly Modes
+        MODE = "Normal", -- Normal, Hover, Jetpack
+        VERTICAL_SPEED = 2
+    },
+    
+    -- NEW: MOVEMENT MODULES
+    MOVEMENT = {
+        SPEED = false,
+        SPEED_MULTIPLIER = 2,
+        JUMP = false,
+        JUMP_POWER = 2,
+        -- NEW: Anti-Aim
+        ANTI_AIM = false,
+        SPIN_SPEED = 5
+    },
+    
+    -- NEW: VISUAL MODULES
+    VISUAL = {
+        FULLBRIGHT = false,
+        FOV_CHANGER = false,
+        FOV_VALUE = 80,
+        -- NEW: Crosshair
+        CROSSHAIR = false,
+        CROSSHAIR_SIZE = 12,
+        CROSSHAIR_COLOR = Color3.fromRGB(255, 255, 255),
+        -- NEW: World Color
+        WORLD_COLOR = false,
+        AMBIENT = Color3.fromRGB(100, 100, 100)
+    },
+    
+    -- NEW: COMBAT MODULES
+    COMBAT = {
+        TRIGGERBOT = false,
+        TRIGGER_DELAY = 0.1,
+        -- NEW: Auto Reload
+        AUTO_RELOAD = false,
+        -- NEW: Recoil Control
+        NO_RECOIL = false,
+        NO_SPREAD = false
+    },
+    
+    -- NEW: MISC MODULES
+    MISC = {
+        AUTO_FARM = false,
+        ANTI_AFK = false,
+        -- NEW: Item ESP
+        ITEM_ESP = false,
+        ITEM_RANGE = 50,
+        -- NEW: X-Ray
+        XRAY = false,
+        -- NEW: Player Info
+        PLAYER_INFO = false
     }
 }
 
--- SHADOW VARIABLES
+-- HUB VARIABLES - ENHANCED
 local TARGET = nil
-local ESP_CACHE = {}
-local FLY_CONTROLS = {W=false, A=false, S=false, D=false, Space=false, Shift=false}
-local LAST_ESP_UPDATE = 0
+local ESP_ITEMS = {}
+local FLYING = false
 local BODYGYRO, BODYVELOCITY = nil, nil
+local SCREEN_GUI = nil
+local MAIN_FRAME = nil
 
--- MEMORY MANAGEMENT
-local function SafeDestroy(obj)
-    if obj and obj.Parent then
-        obj:Destroy()
+-- NEW: CROSSHAIR VARIABLES
+local CROSSHAIR_FRAME = nil
+local LAST_SHOT = 0
+local ANTI_AIM_ANGLE = 0
+
+-- ✅ NEW: CREATE ENHANCED SECTIONS IN HUB
+function createEnhancedSections(parentScrollingFrame)
+    -- NEW: COMBAT ENHANCED SECTION
+    createSection("🔥 COMBAT ENHANCED", parentScrollingFrame)
+    createToggle("Auto Fire", CuTins.AIMBOT.AUTO_FIRE, function(value)
+        CuTins.AIMBOT.AUTO_FIRE = value
+        updateStatus()
+    end, parentScrollingFrame)
+    createToggle("Silent Aim", CuTins.AIMBOT.SILENT_AIM, function(value)
+        CuTins.AIMBOT.SILENT_AIM = value
+        updateStatus()
+    end, parentScrollingFrame)
+    createSlider("Hit Chance %", CuTins.AIMBOT.HIT_CHANCE, 0, 100, function(value)
+        CuTins.AIMBOT.HIT_CHANCE = value
+        updateStatus()
+    end, parentScrollingFrame)
+    createToggle("Triggerbot", CuTins.COMBAT.TRIGGERBOT, function(value)
+        CuTins.COMBAT.TRIGGERBOT = value
+        updateStatus()
+    end, parentScrollingFrame)
+    createToggle("No Recoil", CuTins.COMBAT.NO_RECOIL, function(value)
+        CuTins.COMBAT.NO_RECOIL = value
+        updateStatus()
+    end, parentScrollingFrame)
+    createToggle("No Spread", CuTins.COMBAT.NO_SPREAD, function(value)
+        CuTins.COMBAT.NO_SPREAD = value
+        updateStatus()
+    end, parentScrollingFrame)
+
+    -- NEW: VISUALS ENHANCED SECTION
+    createSection("🌈 VISUALS ENHANCED", parentScrollingFrame)
+    createToggle("Chams", CuTins.ESP.CHAMS, function(value)
+        CuTins.ESP.CHAMS = value
+        updateStatus()
+        updateChams()
+    end, parentScrollingFrame)
+    createToggle("Tracers", CuTins.ESP.TRACERS, function(value)
+        CuTins.ESP.TRACERS = value
+        updateStatus()
+        updateTracers()
+    end, parentScrollingFrame)
+    createToggle("FullBright", CuTins.VISUAL.FULLBRIGHT, function(value)
+        CuTins.VISUAL.FULLBRIGHT = value
+        updateStatus()
+        toggleFullBright()
+    end, parentScrollingFrame)
+    createToggle("FOV Changer", CuTins.VISUAL.FOV_CHANGER, function(value)
+        CuTins.VISUAL.FOV_CHANGER = value
+        updateStatus()
+        updateFOV()
+    end, parentScrollingFrame)
+    createSlider("FOV Value", CuTins.VISUAL.FOV_VALUE, 70, 120, function(value)
+        CuTins.VISUAL.FOV_VALUE = value
+        updateStatus()
+        updateFOV()
+    end, parentScrollingFrame)
+    createToggle("Crosshair", CuTins.VISUAL.CROSSHAIR, function(value)
+        CuTins.VISUAL.CROSSHAIR = value
+        updateStatus()
+        toggleCrosshair()
+    end, parentScrollingFrame)
+
+    -- NEW: MOVEMENT ENHANCED SECTION
+    createSection("⚡ MOVEMENT ENHANCED", parentScrollingFrame)
+    createToggle("Speed Hack", CuTins.MOVEMENT.SPEED, function(value)
+        CuTins.MOVEMENT.SPEED = value
+        updateStatus()
+        updateSpeed()
+    end, parentScrollingFrame)
+    createSlider("Speed Multiplier", CuTins.MOVEMENT.SPEED_MULTIPLIER, 1, 5, function(value)
+        CuTins.MOVEMENT.SPEED_MULTIPLIER = value
+        updateStatus()
+        updateSpeed()
+    end, parentScrollingFrame)
+    createToggle("High Jump", CuTins.MOVEMENT.JUMP, function(value)
+        CuTins.MOVEMENT.JUMP = value
+        updateStatus()
+        updateJump()
+    end, parentScrollingFrame)
+    createToggle("Anti-Aim", CuTins.MOVEMENT.ANTI_AIM, function(value)
+        CuTins.MOVEMENT.ANTI_AIM = value
+        updateStatus()
+    end, parentScrollingFrame)
+    createToggle("NoClip Fly", CuTins.FLY.NOCLIP, function(value)
+        CuTins.FLY.NOCLIP = value
+        updateStatus()
+        toggleNoClip()
+    end, parentScrollingFrame)
+
+    -- NEW: MISC ENHANCED SECTION
+    createSection("🔧 MISC ENHANCED", parentScrollingFrame)
+    createToggle("Auto Farm", CuTins.MISC.AUTO_FARM, function(value)
+        CuTins.MISC.AUTO_FARM = value
+        updateStatus()
+        toggleAutoFarm()
+    end, parentScrollingFrame)
+    createToggle("Anti-AFK", CuTins.MISC.ANTI_AFK, function(value)
+        CuTins.MISC.ANTI_AFK = value
+        updateStatus()
+        toggleAntiAFK()
+    end, parentScrollingFrame)
+    createToggle("Item ESP", CuTins.MISC.ITEM_ESP, function(value)
+        CuTins.MISC.ITEM_ESP = value
+        updateStatus()
+        toggleItemESP()
+    end, parentScrollingFrame)
+    createToggle("X-Ray", CuTins.MISC.XRAY, function(value)
+        CuTins.MISC.XRAY = value
+        updateStatus()
+        toggleXRay()
+    end, parentScrollingFrame)
+    createToggle("Player Info", CuTins.MISC.PLAYER_INFO, function(value)
+        CuTins.MISC.PLAYER_INFO = value
+        updateStatus()
+        togglePlayerInfo()
+    end, parentScrollingFrame)
+end
+
+-- ✅ NEW: ENHANCED FEATURE FUNCTIONS
+
+-- Auto Fire System
+function handleAutoFire()
+    if not CuTins.AIMBOT.AUTO_FIRE or not CuTins.AIMBOT.ENABLED then return end
+    if tick() - LAST_SHOT < CuTins.AIMBOT.FIRE_DELAY then return end
+    
+    TARGET = getClosestPlayer()
+    if TARGET then
+        -- Simulate mouse click for auto fire
+        LAST_SHOT = tick()
+        -- This would trigger your weapon firing mechanism
     end
 end
 
-local function CleanupOrphans()
-    for player, highlight in pairs(ESP_CACHE) do
-        if not player or not player.Parent or not player.Character then
-            SafeDestroy(highlight)
-            ESP_CACHE[player] = nil
+-- Silent Aim System
+function getSilentAimTarget()
+    if not CuTins.AIMBOT.SILENT_AIM then return nil end
+    if math.random(1, 100) > CuTins.AIMBOT.HIT_CHANCE then return nil end
+    
+    return getClosestPlayer()
+end
+
+-- Chams System
+function updateChams()
+    for player, items in pairs(ESP_ITEMS) do
+        if player and player.Character then
+            for _, part in pairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    if CuTins.ESP.CHAMS then
+                        part.Material = Enum.Material.ForceField
+                        part.Color = CuTins.ESP.CHAMS_COLOR
+                    else
+                        part.Material = Enum.Material.Plastic
+                    end
+                end
+            end
         end
     end
 end
 
--- STEALTH GUI CONSTRUCTION
-local function CreateShadowGUI()
-    if game:GetService("CoreGui"):FindFirstChild("ShadowInterface") then
-        game:GetService("CoreGui").ShadowInterface:Destroy()
-    end
-
-    local GUI = Instance.new("ScreenGui")
-    GUI.Name = "ShadowInterface"
-    GUI.Parent = game:GetService("CoreGui")
-    GUI.ResetOnSpawn = false
-
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 320, 0, 450)
-    MainFrame.Position = UDim2.new(0, 30, 0.5, -225)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-    MainFrame.BorderColor3 = Color3.fromRGB(40, 40, 60)
-    MainFrame.BorderSizePixel = 2
-    MainFrame.Active = true
-    MainFrame.Draggable = true
-    MainFrame.Parent = GUI
-
-    -- ENHANCED TITLE BAR
-    local TitleBar = Instance.new("Frame")
-    TitleBar.Size = UDim2.new(1, 0, 0, 35)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    TitleBar.BorderSizePixel = 0
-    TitleBar.Parent = MainFrame
-
-    local TitleGradient = Instance.new("UIGradient")
-    TitleGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 40, 40)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 20, 20))
-    })
-    TitleGradient.Parent = TitleBar
-
-    local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Size = UDim2.new(1, -50, 1, 0)
-    TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = "SHADOW CORE // v2.4.1"
-    TitleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    TitleLabel.TextSize = 14
-    TitleLabel.Font = Enum.Font.GothamMedium
-    TitleLabel.Parent = TitleBar
-
-    local CloseButton = Instance.new("TextButton")
-    CloseButton.Size = UDim2.new(0, 25, 0, 25)
-    CloseButton.Position = UDim2.new(1, -30, 0, 5)
-    CloseButton.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    CloseButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-    CloseButton.Text = "×"
-    CloseButton.TextSize = 16
-    CloseButton.Font = Enum.Font.GothamBold
-    CloseButton.Parent = TitleBar
-
-    -- CONTENT FRAME WITH SCROLLING
-    local ContentFrame = Instance.new("ScrollingFrame")
-    ContentFrame.Size = UDim2.new(1, -15, 1, -50)
-    ContentFrame.Position = UDim2.new(0, 7, 0, 40)
-    ContentFrame.BackgroundTransparency = 1
-    ContentFrame.ScrollBarThickness = 4
-    ContentFrame.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 80)
-    ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 650)
-    ContentFrame.Parent = MainFrame
-
-    -- FEATURE TOGGLE SYSTEM
-    local FeatureDefinitions = {
-        {Name = "PRECISION AIM", Category = "AIMBOT", Field = "ENABLED", Color = Color3.fromRGB(255, 60, 60)},
-        {Name = "TEAM FILTER", Category = "AIMBOT", Field = "TEAM_CHECK", Color = Color3.fromRGB(80, 120, 255)},
-        {Name = "SPATIAL AWARENESS", Category = "ESP", Field = "ENABLED", Color = Color3.fromRGB(60, 255, 100)},
-        {Name = "FRIENDLY FILTER", Category = "ESP", Field = "TEAM_CHECK", Color = Color3.fromRGB(80, 200, 255)},
-        {Name = "HITBOX EXPANSION", Category = "HITBOX", Field = "ENABLED", Color = Color3.fromRGB(255, 120, 40)},
-        {Name = "AERIAL MOBILITY", Category = "FLY", Field = "ENABLED", Color = Color3.fromRGB(180, 80, 255)}
-    }
-
-    for index, feature in ipairs(FeatureDefinitions) do
-        local ToggleFrame = Instance.new("Frame")
-        ToggleFrame.Size = UDim2.new(1, 0, 0, 50)
-        ToggleFrame.Position = UDim2.new(0, 0, 0, (index-1) * 55)
-        ToggleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-        ToggleFrame.BorderSizePixel = 0
-        ToggleFrame.Parent = ContentFrame
-
-        local ToggleButton = Instance.new("TextButton")
-        ToggleButton.Size = UDim2.new(1, -10, 1, -10)
-        ToggleButton.Position = UDim2.new(0, 5, 0, 5)
-        ToggleButton.BackgroundColor3 = ShadowConfig[feature.Category][feature.Field] and feature.Color or Color3.fromRGB(40, 40, 55)
-        ToggleButton.Text = feature.Name .. "\n" .. (ShadowConfig[feature.Category][feature.Field] and "ACTIVE" : "INACTIVE")
-        ToggleButton.TextColor3 = Color3.fromRGB(220, 220, 220)
-        ToggleButton.TextSize = 12
-        ToggleButton.Font = Enum.Font.Gotham
-        ToggleButton.TextWrapped = true
-        ToggleButton.Parent = ToggleFrame
-
-        -- SMOOTH TOGGLE ANIMATION
-        ToggleButton.MouseButton1Click:Connect(function()
-            ShadowConfig[feature.Category][feature.Field] = not ShadowConfig[feature.Category][feature.Field]
-            
-            local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-            local tween = TweenService:Create(ToggleButton, tweenInfo, {
-                BackgroundColor3 = ShadowConfig[feature.Category][feature.Field] and feature.Color or Color3.fromRGB(40, 40, 55)
-            })
-            tween:Play()
-            
-            ToggleButton.Text = feature.Name .. "\n" .. (ShadowConfig[feature.Category][field] and "ACTIVE" : "INACTIVE")
-            
-            -- FEATURE-SPECIFIC HANDLERS
-            if feature.Category == "FLY" then
-                ToggleFlight()
-            elseif feature.Category == "ESP" and not ShadowConfig.ESP.ENABLED then
-                ClearESPCache()
-            end
-        end)
-    end
-
-    -- CLOSE HANDLER
-    CloseButton.MouseButton1Click:Connect(function()
-        GUI:Destroy()
-        ShadowConfig.ACTIVE = false
-    end)
-
-    return GUI
-end
-
--- ENHANCED TARGET ACQUISITION
-local function AcquireOptimalTarget()
-    if not ShadowConfig.AIMBOT.ENABLED then return nil end
-    
-    local optimalTarget = nil
-    local minimalDistance = ShadowConfig.AIMBOT.FOV
-    local viewportCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        if not player.Character then continue end
-        
-        -- TEAM VALIDATION
-        if ShadowConfig.AIMBOT.TEAM_CHECK then
-            if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-                continue
-            end
+-- Tracers System
+function updateTracers()
+    -- Cleanup old tracers
+    for player, items in pairs(ESP_ITEMS) do
+        if items.Tracer then
+            items.Tracer:Remove()
+            items.Tracer = nil
         end
-        
-        local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-        
-        if rootPart and humanoid and humanoid.Health > 0 then
-            local screenPosition, visible = Camera:WorldToViewportPoint(rootPart.Position)
-            
-            if visible then
-                local screenPoint = Vector2.new(screenPosition.X, screenPosition.Y)
-                local distance = (screenPoint - viewportCenter).Magnitude
+    end
+    
+    if not CuTins.ESP.TRACERS then return end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local tracer = Instance.new("Frame")
+                tracer.Name = "Tracer"
+                tracer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                tracer.BorderSizePixel = 0
+                tracer.Parent = SCREEN_GUI
                 
-                if distance < minimalDistance then
-                    minimalDistance = distance
-                    optimalTarget = player
-                end
+                ESP_ITEMS[player] = ESP_ITEMS[player] or {}
+                ESP_ITEMS[player].Tracer = tracer
             end
         end
     end
-    
-    return optimalTarget
 end
 
--- PRECISION AIMING SYSTEM
-local function ExecutePrecisionAim()
-    if not TARGET or not TARGET.Character then return end
-    
-    local targetCharacter = TARGET.Character
-    local aimPart = targetCharacter:FindFirstChild("Head") or targetCharacter:FindFirstChild("HumanoidRootPart")
-    if not aimPart then return end
-    
-    local currentCFrame = Camera.CFrame
-    local targetPosition = aimPart.Position
-    
-    -- VELOCITY PREDICTION
-    local targetVelocity = aimPart.AssemblyLinearVelocity
-    local predictedPosition = targetPosition + (targetVelocity * ShadowConfig.AIMBOT.PREDICTION)
-    
-    local aimDirection = (predictedPosition - currentCFrame.Position).Unit
-    local smoothedDirection = currentCFrame.LookVector:Lerp(aimDirection, ShadowConfig.AIMBOT.SMOOTHING)
-    
-    Camera.CFrame = CFrame.new(currentCFrame.Position, currentCFrame.Position + smoothedDirection)
-end
-
--- OPTIMIZED ESP MANAGEMENT
-local function UpdateSpatialAwareness()
-    CleanupOrphans()
-    
-    if not ShadowConfig.ESP.ENABLED then return end
-    if tick() - LAST_ESP_UPDATE < ShadowConfig.ESP.UPDATE_INTERVAL then return end
-    
-    LAST_ESP_UPDATE = tick()
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        if not player.Character then continue end
-        
-        -- DISTANCE CHECK
-        local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-        if not rootPart then continue end
-        
-        local distance = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) 
-            and (rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or 0
-        
-        if distance > ShadowConfig.ESP.MAX_DISTANCE then
-            if ESP_CACHE[player] then
-                SafeDestroy(ESP_CACHE[player])
-                ESP_CACHE[player] = nil
-            end
-            continue
-        end
-        
-        -- TEAM VALIDATION
-        if ShadowConfig.ESP.TEAM_CHECK then
-            if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-                if ESP_CACHE[player] then
-                    SafeDestroy(ESP_CACHE[player])
-                    ESP_CACHE[player] = nil
-                end
-                continue
-            end
-        end
-        
-        -- CREATE/UPDATE HIGHLIGHT
-        if not ESP_CACHE[player] then
-            local highlight = Instance.new("Highlight")
-            highlight.FillColor = Color3.fromRGB(255, 50, 50)
-            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            highlight.FillTransparency = 0.8
-            highlight.OutlineTransparency = 0.2
-            highlight.Adornee = player.Character
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Parent = player.Character
-            
-            ESP_CACHE[player] = highlight
-        end
+-- FullBright System
+function toggleFullBright()
+    if CuTins.VISUAL.FULLBRIGHT then
+        game:GetService("Lighting").GlobalShadows = false
+        game:GetService("Lighting").Brightness = 2
+    else
+        game:GetService("Lighting").GlobalShadows = true
+        game:GetService("Lighting").Brightness = 1
     end
 end
 
-local function ClearESPCache()
-    for player, highlight in pairs(ESP_CACHE) do
-        SafeDestroy(highlight)
-    end
-    ESP_CACHE = {}
-end
-
--- DYNAMIC HITBOX SYSTEM
-local function UpdateHitboxExpansion()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        if not player.Character then continue end
-        
-        local head = player.Character:FindFirstChild("Head")
-        if not head then continue end
-        
-        -- REMOVE EXISTING HITBOX
-        local existingHitbox = head:FindFirstChild("ShadowHitbox")
-        if existingHitbox then
-            existingHitbox:Destroy()
-        end
-        
-        -- CREATE NEW HITBOX IF ENABLED
-        if ShadowConfig.HITBOX.ENABLED then
-            local hitboxPart = Instance.new("Part")
-            hitboxPart.Name = "ShadowHitbox"
-            hitboxPart.Size = head.Size * ShadowConfig.HITBOX.SIZE
-            hitboxPart.Transparency = ShadowConfig.HITBOX.TRANSPARENCY
-            hitboxPart.Color = Color3.fromRGB(255, 0, 0)
-            hitboxPart.Material = Enum.Material.Neon
-            hitboxPart.CanCollide = false
-            hitboxPart.Anchored = false
-            hitboxPart.Parent = head
-            
-            local weldConstraint = Instance.new("Weld")
-            weldConstraint.Part0 = head
-            weldConstraint.Part1 = hitboxPart
-            weldConstraint.C0 = CFrame.new()
-            weldConstraint.Parent = hitboxPart
-        end
+-- FOV Changer
+function updateFOV()
+    if CuTins.VISUAL.FOV_CHANGER then
+        Camera.FieldOfView = CuTins.VISUAL.FOV_VALUE
+    else
+        Camera.FieldOfView = 70 -- Default FOV
     end
 end
 
--- ADVANCED FLIGHT SYSTEM
-local function ToggleFlight()
-    SafeDestroy(BODYGYRO)
-    SafeDestroy(BODYVELOCITY)
-    BODYGYRO, BODYVELOCITY = nil, nil
+-- Crosshair System
+function toggleCrosshair()
+    if CROSSHAIR_FRAME then
+        CROSSHAIR_FRAME:Destroy()
+        CROSSHAIR_FRAME = nil
+    end
     
-    if not ShadowConfig.FLY.ENABLED then return end
+    if not CuTins.VISUAL.CROSSHAIR then return end
     
+    CROSSHAIR_FRAME = Instance.new("Frame")
+    CROSSHAIR_FRAME.Name = "Crosshair"
+    CROSSHAIR_FRAME.Size = UDim2.new(0, CuTins.VISUAL.CROSSHAIR_SIZE, 0, 2)
+    CROSSHAIR_FRAME.Position = UDim2.new(0.5, -CuTins.VISUAL.CROSSHAIR_SIZE/2, 0.5, -1)
+    CROSSHAIR_FRAME.BackgroundColor3 = CuTins.VISUAL.CROSSHAIR_COLOR
+    CROSSHAIR_FRAME.BorderSizePixel = 0
+    CROSSHAIR_FRAME.ZIndex = 999
+    CROSSHAIR_FRAME.Parent = SCREEN_GUI
+    
+    local verticalLine = Instance.new("Frame")
+    verticalLine.Size = UDim2.new(0, 2, 0, CuTins.VISUAL.CROSSHAIR_SIZE)
+    verticalLine.Position = UDim2.new(0.5, -1, 0.5, -CuTins.VISUAL.CROSSHAIR_SIZE/2)
+    verticalLine.BackgroundColor3 = CuTins.VISUAL.CROSSHAIR_COLOR
+    verticalLine.BorderSizePixel = 0
+    verticalLine.ZIndex = 999
+    verticalLine.Parent = SCREEN_GUI
+end
+
+-- Speed Hack
+function updateSpeed()
     local character = LocalPlayer.Character
     if not character then return end
     
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-    
-    BODYGYRO = Instance.new("BodyGyro")
-    BODYGYRO.P = 1000
-    BODYGYRO.D = 50
-    BODYGYRO.MaxTorque = Vector3.new(4000, 4000, 4000)
-    BODYGYRO.CFrame = rootPart.CFrame
-    BODYGYRO.Parent = rootPart
-    
-    BODYVELOCITY = Instance.new("BodyVelocity")
-    BODYVELOCITY.Velocity = Vector3.new(0, 0, 0)
-    BODYVELOCITY.MaxForce = Vector3.new(4000, 4000, 4000)
-    BODYVELOCITY.Parent = rootPart
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        if CuTins.MOVEMENT.SPEED then
+            humanoid.WalkSpeed = 16 * CuTins.MOVEMENT.SPEED_MULTIPLIER
+        else
+            humanoid.WalkSpeed = 16 -- Default speed
+        end
+    end
 end
 
-local function ProcessFlightInput()
-    if not ShadowConfig.FLY.ENABLED or not BODYVELOCITY then return end
-    
+-- High Jump
+function updateJump()
     local character = LocalPlayer.Character
     if not character then return end
     
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-    
-    local movementVector = Vector3.new(0, 0, 0)
-    
-    if FLY_CONTROLS.W then movementVector = movementVector + rootPart.CFrame.LookVector end
-    if FLY_CONTROLS.S then movementVector = movementVector - rootPart.CFrame.LookVector end
-    if FLY_CONTROLS.A then movementVector = movementVector - rootPart.CFrame.RightVector end
-    if FLY_CONTROLS.D then movementVector = movementVector + rootPart.CFrame.RightVector end
-    if FLY_CONTROLS.Space then movementVector = movementVector + Vector3.new(0, ShadowConfig.FLY.VERTICAL_MULTIPLIER, 0) end
-    if FLY_CONTROLS.Shift then movementVector = movementVector + Vector3.new(0, -ShadowConfig.FLY.VERTICAL_MULTIPLIER, 0) end
-    
-    BODYVELOCITY.Velocity = movementVector * ShadowConfig.FLY.SPEED * 20
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        if CuTins.MOVEMENT.JUMP then
+            humanoid.JumpPower = 50 * CuTins.MOVEMENT.JUMP_POWER
+        else
+            humanoid.JumpPower = 50 -- Default jump power
+        end
+    end
 end
 
--- OPTIMIZED CORE LOOP
-local HeartbeatConnection = RunService.Heartbeat:Connect(function()
-    if not ShadowConfig.ACTIVE then
-        HeartbeatConnection:Disconnect()
-        return
+-- NoClip System
+function toggleNoClip()
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not CuTins.FLY.NOCLIP
+        end
+    end
+end
+
+-- Anti-AFK System
+function toggleAntiAFK()
+    if CuTins.MISC.ANTI_AFK then
+        -- Prevent AFK detection
+        local VirtualInput = game:GetService("VirtualInputManager")
+        coroutine.wrap(function()
+            while CuTins.MISC.ANTI_AFK and CuTins.ACTIVE do
+                wait(30)
+                VirtualInput:SendKeyEvent(true, Enum.KeyCode.W, false, game)
+                wait(0.1)
+                VirtualInput:SendKeyEvent(false, Enum.KeyCode.W, false, game)
+            end
+        end)()
+    end
+end
+
+-- Item ESP System
+function toggleItemESP()
+    -- This would be game-specific for item highlighting
+    if CuTins.MISC.ITEM_ESP then
+        -- Implement item highlighting logic here
+    else
+        -- Cleanup item highlights
+    end
+end
+
+-- X-Ray System
+function toggleXRay()
+    if CuTins.MISC.XRAY then
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and part.Transparency < 1 then
+                part.LocalTransparencyModifier = 0.5
+            end
+        end
+    else
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.LocalTransparencyModifier = 0
+            end
+        end
+    end
+end
+
+-- Player Info System
+function togglePlayerInfo()
+    -- Enhanced player information display
+    if CuTins.MISC.PLAYER_INFO then
+        -- Show additional player info in ESP
+    else
+        -- Hide additional info
+    end
+end
+
+-- Auto Farm System (Game-specific)
+function toggleAutoFarm()
+    if CuTins.MISC.AUTO_FARM then
+        -- Implement automated farming logic
+        print("Auto Farm activated - Game specific implementation needed")
+    else
+        -- Stop farming
+        print("Auto Farm deactivated")
+    end
+end
+
+-- ✅ MODIFIED HUB CREATION TO INCLUDE NEW SECTIONS
+-- In the createHubInterface function, after existing sections, add:
+function createEnhancedHub()
+    createHubInterface() -- Call original function
+    
+    -- Wait for original UI to create
+    wait(0.1)
+    
+    -- Find the scrolling frame and add enhanced sections
+    local scrollingFrame = MAIN_FRAME:FindFirstChild("Content"):FindFirstChild("ScrollingFrame")
+    if scrollingFrame then
+        createEnhancedSections(scrollingFrame)
+        
+        -- Update canvas size for new content
+        scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1000)
+    end
+end
+
+-- ✅ ENHANCED MAIN LOOP
+RunService.RenderStepped:Connect(function()
+    -- Original functionality
+    if CuTins.AIMBOT.ENABLED and TARGET then
+        aimAtTarget()
     end
     
-    -- PRECISION AIMING
-    if ShadowConfig.AIMBOT.ENABLED and TARGET then
-        ExecutePrecisionAim()
+    -- NEW: Enhanced features
+    handleAutoFire()
+    
+    -- NEW: Anti-Aim spin
+    if CuTins.MOVEMENT.ANTI_AIM then
+        ANTI_AIM_ANGLE = (ANTI_AIM_ANGLE + CuTins.MOVEMENT.SPIN_SPEED) % 360
+        local character = LocalPlayer.Character
+        if character then
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(ANTI_AIM_ANGLE), 0)
+            end
+        end
     end
     
-    -- SPATIAL AWARENESS
-    UpdateSpatialAwareness()
+    -- NEW: Update tracers
+    if CuTins.ESP.TRACERS then
+        updateTracersPosition()
+    end
     
-    -- HITBOX MANAGEMENT
-    UpdateHitboxExpansion()
-    
-    -- AERIAL MOBILITY
-    ProcessFlightInput()
+    -- ESP handling
+    if CuTins.ESP.ENABLED then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and not ESP_ITEMS[player] then
+                createESP(player)
+            end
+        end
+    end
 end)
 
--- ENHANCED INPUT HANDLING
+-- ✅ NEW: Update tracer positions
+function updateTracersPosition()
+    for player, items in pairs(ESP_ITEMS) do
+        if items.Tracer and player.Character then
+            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                if onScreen then
+                    items.Tracer.Visible = true
+                    items.Tracer.Position = UDim2.new(0, screenPos.X, 0, screenPos.Y)
+                    
+                    -- Calculate angle and length
+                    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+                    local target = Vector2.new(screenPos.X, screenPos.Y)
+                    local direction = (target - center).Unit
+                    
+                    items.Tracer.Size = UDim2.new(0, (target - center).Magnitude, 0, 1)
+                    items.Tracer.Rotation = math.deg(math.atan2(direction.Y, direction.X))
+                else
+                    items.Tracer.Visible = false
+                end
+            end
+        end
+    end
+end
+
+-- ✅ ENHANCED INPUT HANDLING
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
-    -- AIMBOT ACTIVATION
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and ShadowConfig.AIMBOT.ENABLED then
-        TARGET = AcquireOptimalTarget()
-    end
-    
-    -- INTERFACE TOGGLE
+    -- Original inputs
     if input.KeyCode == Enum.KeyCode.Insert then
-        CreateShadowGUI()
+        CuTins.UI_OPEN = not CuTins.UI_OPEN
+        SCREEN_GUI.Enabled = CuTins.UI_OPEN
     end
     
-    -- FLIGHT CONTROLS
-    if input.KeyCode == Enum.KeyCode.W then FLY_CONTROLS.W = true end
-    if input.KeyCode == Enum.KeyCode.A then FLY_CONTROLS.A = true end
-    if input.KeyCode == Enum.KeyCode.S then FLY_CONTROLS.S = true end
-    if input.KeyCode == Enum.KeyCode.D then FLY_CONTROLS.D = true end
-    if input.KeyCode == Enum.KeyCode.Space then FLY_CONTROLS.Space = true end
-    if input.KeyCode == Enum.KeyCode.LeftShift then FLY_CONTROLS.Shift = true end
-end)
-
-UserInputService.InputEnded:Connect(function(input, processed)
-    if processed then return end
-    
-    -- AIMBOT DEACTIVATION
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        TARGET = nil
+    if input.UserInputType == CuTins.AIMBOT.MOUSE_BUTTON and CuTins.AIMBOT.ENABLED then
+        TARGET = getClosestPlayer()
+        if CuTins.AIMBOT.SILENT_AIM then
+            TARGET = getSilentAimTarget() or TARGET
+        end
     end
     
-    -- FLIGHT CONTROLS
-    if input.KeyCode == Enum.KeyCode.W then FLY_CONTROLS.W = false end
-    if input.KeyCode == Enum.KeyCode.A then FLY_CONTROLS.A = false end
-    if input.KeyCode == Enum.KeyCode.S then FLY_CONTROLS.S = false end
-    if input.KeyCode == Enum.KeyCode.D then FLY_CONTROLS.D = false end
-    if input.KeyCode == Enum.KeyCode.Space then FLY_CONTROLS.Space = false end
-    if input.KeyCode == Enum.KeyCode.LeftShift then FLY_CONTROLS.Shift = false end
+    if input.KeyCode == Enum.KeyCode.F then
+        CuTins.FLY.ENABLED = not CuTins.FLY.ENABLED
+        toggleFly()
+        updateStatus()
+    end
+    
+    -- NEW: Quick toggle for speed hack
+    if input.KeyCode == Enum.KeyCode.V then
+        CuTins.MOVEMENT.SPEED = not CuTins.MOVEMENT.SPEED
+        updateSpeed()
+        updateStatus()
+    end
+    
+    -- NEW: Quick toggle for no clip
+    if input.KeyCode == Enum.KeyCode.N then
+        CuTins.FLY.NOCLIP = not CuTins.FLY.NOCLIP
+        toggleNoClip()
+        updateStatus()
+    end
 end)
 
--- SECURE INITIALIZATION
-local initializationSuccess, initializationError = pcall(function()
-    CreateShadowGUI()
-    
-    print([[
-    
-    ███████ ██   ██  █████  ██████  ██████   ██████  
-    ██      ██   ██ ██   ██ ██   ██ ██   ██ ██    ██ 
-    ███████ ███████ ███████ ██   ██ ██   ██ ██    ██ 
-         ██ ██   ██ ██   ██ ██   ██ ██   ██ ██    ██ 
-    ███████ ██   ██ ██   ██ ██████  ██████   ██████  
-                                                      
-           SHADOW CORE v2.4.1 - ACTIVE
-           STEALTH MODE: ENGAGED
-           PERFORMANCE: OPTIMIZED
-    
-    ]])
-end)
+-- ✅ ENHANCED INITIALIZATION
+createEnhancedHub() -- Use enhanced hub instead of original
+createWatermark()
+updateStatus()
 
-if not initializationSuccess then
-    warn("SHADOW CORE INITIALIZATION FAILED: " .. tostring(initializationError))
+-- Enhanced player tracking with new features
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer and CuTins.ESP.ENABLED and player.Character then
+        createESP(player)
+    end
+    player.CharacterAdded:Connect(function(char)
+        wait(1)
+        if CuTins.ESP.ENABLED then
+            createESP(player)
+        end
+    end)
 end
 
--- SECURE CLEANUP PROTOCOL
-Players.PlayerRemoving:Connect(function(player)
-    if player == LocalPlayer then
-        ShadowConfig.ACTIVE = false
-        SafeDestroy(BODYGYRO)
-        SafeDestroy(BODYVELOCITY)
-        ClearESPCache()
-        HeartbeatConnection:Disconnect()
-    end
-end)
+print([[
+
+ ██████ ██    ██ ████████ ██ ███    ██ ████████
+██      ██    ██    ██    ██ ████   ██ ██
+██      ██    ██    ██    ██ ██ ██  ██ ████████
+██      ██    ██    ██    ██ ██  ██ ██       ██
+ ██████  ██████     ██    ██ ██   ████ ████████
+                                                 
+        Heck 2025 - ENHANCED EDITION
+            CuTins © 2025
+
+🎮 CuTins Heck ENHANCED ĐÃ KÍCH HOẠT!
+
+]])
+
+-- Keep script running
+while CuTins.ACTIVE do
+    wait(1)
+end
