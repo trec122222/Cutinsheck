@@ -1,84 +1,67 @@
--- CuTins Heck HUB 2025 - MENU VISIBLE FIX
--- FIXED: Menu hiển thị đầy đủ tính năng
+-- CuTins Heck HUB 2025 - ORIGINAL GUI
+-- GUI GỐC ĐƠN GIẢN VÀ HIỆU QUẢ
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- CONFIGURATION
+-- CẤU HÌNH GỐC
 local CuTins = {
     ACTIVE = true,
-    VERSION = "CuTins FPS 2025",
+    VERSION = "CuTins Heck 2025",
     
     AIMBOT = {
         ENABLED = false,
         FOV = 80,
         SMOOTHING = 0.3,
-        TEAM_CHECK = true,
-        TRIGGERBOT = false
+        TEAM_CHECK = true
     },
     
     ESP = {
         ENABLED = false,
-        TEAM_CHECK = true,
-        BOX = true,
-        NAMES = true
+        TEAM_CHECK = true
     },
     
-    WEAPON = {
-        NO_RECOIL = false,
-        NO_SPREAD = false,
-        RAPID_FIRE = false,
-        INFINITE_AMMO = false
+    HITBOX = {
+        ENABLED = false,
+        SIZE = 2.0
     },
     
-    MOVEMENT = {
-        SPEED = false,
-        SPEED_VALUE = 30,
-        JUMP = false,
-        JUMP_VALUE = 75
-    },
-    
-    VISUAL = {
-        BRIGHT_MAP = false,
-        CROSSHAIR = false
+    FLY = {
+        ENABLED = false,
+        SPEED = 3
     }
 }
 
--- VARIABLES
+-- BIẾN GỐC
 local TARGET = nil
 local ESP_ITEMS = {}
-local SCREEN_GUI = nil
+local BODYGYRO, BODYVELOCITY = nil, nil
 
--- ✅ FIXED MENU CREATION - ĐẢM BẢO HIỂN THỊ ĐẦY ĐỦ
-local function createFixedMenu()
-    -- Cleanup old GUI
-    if SCREEN_GUI then
-        SCREEN_GUI:Destroy()
+-- ✅ GUI GỐC ĐƠN GIẢN
+local function createOriginalGUI()
+    -- Xóa GUI cũ nếu có
+    if game:GetService("CoreGui"):FindFirstChild("CuTinsOriginal") then
+        game:GetService("CoreGui").CuTinsOriginal:Destroy()
     end
-    
-    -- Create new GUI
-    SCREEN_GUI = Instance.new("ScreenGui")
-    SCREEN_GUI.Name = "CuTinsMenu"
-    SCREEN_GUI.ResetOnSpawn = false
-    SCREEN_GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    SCREEN_GUI.Parent = game:GetService("CoreGui")
 
-    -- Main Container - ĐỦ LỚN ĐỂ HIỂN THỊ TẤT CẢ
+    -- Tạo GUI chính
+    local GUI = Instance.new("ScreenGui")
+    GUI.Name = "CuTinsOriginal"
+    GUI.Parent = game:GetService("CoreGui")
+
+    -- Main Frame
     local MainFrame = Instance.new("Frame")
-    MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 350, 0, 500)
-    MainFrame.Position = UDim2.new(0.5, -175, 0.5, -250)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+    MainFrame.Size = UDim2.new(0, 300, 0, 400)
+    MainFrame.Position = UDim2.new(0, 20, 0.5, -200)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     MainFrame.BorderSizePixel = 2
     MainFrame.BorderColor3 = Color3.fromRGB(255, 50, 50)
     MainFrame.Active = true
     MainFrame.Draggable = true
-    MainFrame.ClipsDescendants = false -- QUAN TRỌNG: Cho phép hiển thị đầy đủ
-    MainFrame.Parent = SCREEN_GUI
+    MainFrame.Parent = GUI
 
     -- Title Bar
     local TitleBar = Instance.new("Frame")
@@ -87,9 +70,9 @@ local function createFixedMenu()
     TitleBar.Parent = MainFrame
 
     local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+    TitleLabel.Size = UDim2.new(1, -50, 1, 0)
     TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = "CuTins FPS 2025"
+    TitleLabel.Text = "CuTins Heck 2025"
     TitleLabel.TextColor3 = Color3.white
     TitleLabel.TextSize = 16
     TitleLabel.Font = Enum.Font.GothamBold
@@ -97,7 +80,7 @@ local function createFixedMenu()
 
     local CloseButton = Instance.new("TextButton")
     CloseButton.Size = UDim2.new(0, 30, 0, 30)
-    CloseButton.Position = UDim2.new(1, -35, 0.5, -15)
+    CloseButton.Position = UDim2.new(1, -35, 0, 5)
     CloseButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
     CloseButton.Text = "X"
     CloseButton.TextColor3 = Color3.white
@@ -105,205 +88,171 @@ local function createFixedMenu()
     CloseButton.Font = Enum.Font.GothamBold
     CloseButton.Parent = TitleBar
 
-    -- Content Area - SCROLLING FRAME ĐỦ LỚN
-    local ContentFrame = Instance.new("ScrollingFrame")
-    ContentFrame.Size = UDim2.new(1, -20, 1, -60) -- Chiều cao đủ lớn
-    ContentFrame.Position = UDim2.new(0, 10, 0, 50)
-    ContentFrame.BackgroundTransparency = 1
-    ContentFrame.ScrollBarThickness = 6
-    ContentFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 150)
-    ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 800) -- QUAN TRỌNG: Đủ cho tất cả tính năng
-    ContentFrame.Parent = MainFrame
+    -- Content Area
+    local Content = Instance.new("ScrollingFrame")
+    Content.Size = UDim2.new(1, -20, 1, -60)
+    Content.Position = UDim2.new(0, 10, 0, 50)
+    Content.BackgroundTransparency = 1
+    Content.ScrollBarThickness = 4
+    Content.CanvasSize = UDim2.new(0, 0, 0, 600)
+    Content.Parent = MainFrame
 
-    -- UIListLayout để sắp xếp các nút
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.Padding = UDim2.new(0, 5)
-    UIListLayout.Parent = ContentFrame
+    -- TẠO CÁC TÍNH NĂNG GỐC
+    local features = {
+        {"🎯 AIMBOT", "AIMBOT", "ENABLED"},
+        {"🔵 TEAM CHECK", "AIMBOT", "TEAM_CHECK"},
+        {"👁️ ESP", "ESP", "ENABLED"},
+        {"🔵 TEAM ESP", "ESP", "TEAM_CHECK"},
+        {"🎯 HITBOX", "HITBOX", "ENABLED"},
+        {"🕊️ FLY", "FLY", "ENABLED"}
+    }
 
-    -- ✅ TẠO TẤT CẢ TÍNH NĂNG - ĐẢM BẢO HIỂN THỊ ĐẦY ĐỦ
-
-    -- SECTION: COMBAT
-    createSection("⚔️ COMBAT", ContentFrame)
-    createFeatureToggle("Aimbot", "AIMBOT", "ENABLED", ContentFrame)
-    createFeatureToggle("Team Check", "AIMBOT", "TEAM_CHECK", ContentFrame)
-    createFeatureToggle("Triggerbot", "AIMBOT", "TRIGGERBOT", ContentFrame)
-    createSlider("Aimbot FOV", "AIMBOT", "FOV", 10, 200, ContentFrame)
-    createSlider("Smoothing", "AIMBOT", "SMOOTHING", 1, 100, ContentFrame, true)
-
-    -- SECTION: VISUAL
-    createSection("👁️ VISUAL", ContentFrame)
-    createFeatureToggle("ESP", "ESP", "ENABLED", ContentFrame)
-    createFeatureToggle("Team ESP", "ESP", "TEAM_CHECK", ContentFrame)
-    createFeatureToggle("Box ESP", "ESP", "BOX", ContentFrame)
-    createFeatureToggle("Show Names", "ESP", "NAMES", ContentFrame)
-
-    -- SECTION: WEAPON
-    createSection("🔫 WEAPON", ContentFrame)
-    createFeatureToggle("No Recoil", "WEAPON", "NO_RECOIL", ContentFrame)
-    createFeatureToggle("No Spread", "WEAPON", "NO_SPREAD", ContentFrame)
-    createFeatureToggle("Rapid Fire", "WEAPON", "RAPID_FIRE", ContentFrame)
-    createFeatureToggle("Infinite Ammo", "WEAPON", "INFINITE_AMMO", ContentFrame)
-
-    -- SECTION: MOVEMENT
-    createSection("💨 MOVEMENT", ContentFrame)
-    createFeatureToggle("Speed Hack", "MOVEMENT", "SPEED", ContentFrame)
-    createSlider("Speed Value", "MOVEMENT", "SPEED_VALUE", 16, 100, ContentFrame)
-    createFeatureToggle("High Jump", "MOVEMENT", "JUMP", ContentFrame)
-    createSlider("Jump Power", "MOVEMENT", "JUMP_VALUE", 50, 200, ContentFrame)
-
-    -- SECTION: VISUAL ENHANCE
-    createSection("🌟 VISUAL ENHANCE", ContentFrame)
-    createFeatureToggle("Bright Map", "VISUAL", "BRIGHT_MAP", ContentFrame)
-    createFeatureToggle("Crosshair", "VISUAL", "CROSSHAIR", ContentFrame)
-
-    -- Close button event
-    CloseButton.MouseButton1Click:Connect(function()
-        SCREEN_GUI.Enabled = false
-    end)
-
-    -- Auto-update canvas size khi thêm elements
-    UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        ContentFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
-    end)
-
-    return SCREEN_GUI
-end
-
--- ✅ FIXED UI COMPONENTS - ĐẢM BẢO HIỂN THỊ RÕ RÀNG
-
-function createSection(title, parent)
-    local section = Instance.new("Frame")
-    section.Size = UDim2.new(1, 0, 0, 30)
-    section.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    section.BorderSizePixel = 0
-    section.Parent = parent
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -10, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = title
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextSize = 14
-    label.Font = Enum.Font.GothamBold
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = section
-
-    return section
-end
-
-function createFeatureToggle(name, category, setting, parent)
-    local toggleFrame = Instance.new("Frame")
-    toggleFrame.Size = UDim2.new(1, 0, 0, 35)
-    toggleFrame.BackgroundTransparency = 1
-    toggleFrame.Parent = parent
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = name
-    label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    label.TextSize = 13
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = toggleFrame
-
-    local toggleButton = Instance.new("TextButton")
-    toggleButton.Size = UDim2.new(0, 60, 0, 25)
-    toggleButton.Position = UDim2.new(1, -65, 0.5, -12.5)
-    toggleButton.BackgroundColor3 = CuTins[category][setting] and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(80, 80, 100)
-    toggleButton.Text = CuTins[category][setting] and "ON" or "OFF"
-    toggleButton.TextColor3 = Color3.white
-    toggleButton.TextSize = 12
-    toggleButton.Font = Enum.Font.GothamBold
-    toggleButton.Parent = toggleFrame
-
-    toggleButton.MouseButton1Click:Connect(function()
-        CuTins[category][setting] = not CuTins[category][setting]
-        toggleButton.BackgroundColor3 = CuTins[category][setting] and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(80, 80, 100)
-        toggleButton.Text = CuTins[category][setting] and "ON" or "OFF"
-    end)
-
-    return toggleFrame
-end
-
-function createSlider(name, category, setting, min, max, parent, isPercent)
-    local sliderFrame = Instance.new("Frame")
-    sliderFrame.Size = UDim2.new(1, 0, 0, 50)
-    sliderFrame.BackgroundTransparency = 1
-    sliderFrame.Parent = parent
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.BackgroundTransparency = 1
-    local displayValue = isPercent and math.floor(CuTins[category][setting] * 100) .. "%" or CuTins[category][setting]
-    label.Text = name .. ": " .. displayValue
-    label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    label.TextSize = 13
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = sliderFrame
-
-    local track = Instance.new("Frame")
-    track.Size = UDim2.new(1, 0, 0, 6)
-    track.Position = UDim2.new(0, 0, 1, -25)
-    track.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-    track.Parent = sliderFrame
-
-    local fill = Instance.new("Frame")
-    local currentValue = isPercent and CuTins[category][setting] * 100 or CuTins[category][setting]
-    fill.Size = UDim2.new((currentValue - min) / (max - min), 0, 1, 0)
-    fill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-    fill.Parent = track
-
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 16, 0, 16)
-    button.Position = UDim2.new((currentValue - min) / (max - min), -8, 0.5, -8)
-    button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    button.Text = ""
-    button.Parent = track
-
-    local dragging = false
-
-    button.MouseButton1Down:Connect(function()
-        dragging = true
-    end)
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local mousePos = UserInputService:GetMouseLocation()
-            local trackAbsPos = track.AbsolutePosition
-            local trackAbsSize = track.AbsoluteSize
+    for i, feature in pairs(features) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 50)
+        btn.Position = UDim2.new(0, 0, 0, (i-1) * 55)
+        btn.BackgroundColor3 = CuTins[feature[2]][feature[3]] and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 80)
+        btn.Text = feature[1] .. "\n" .. (CuTins[feature[2]][feature[3]] and "ON" or "OFF")
+        btn.TextColor3 = Color3.white
+        btn.TextSize = 14
+        btn.Font = Enum.Font.GothamBold
+        btn.TextWrapped = true
+        btn.Parent = Content
+        
+        btn.MouseButton1Click:Connect(function()
+            CuTins[feature[2]][feature[3]] = not CuTins[feature[2]][feature[3]]
+            btn.BackgroundColor3 = CuTins[feature[2]][feature[3]] and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 80)
+            btn.Text = feature[1] .. "\n" .. (CuTins[feature[2]][feature[3]] and "ON" or "OFF")
             
-            local relativeX = (mousePos.X - trackAbsPos.X) / trackAbsSize.X
-            relativeX = math.clamp(relativeX, 0, 1)
-            
-            local newValue = math.floor(min + (relativeX * (max - min)))
-            
-            if isPercent then
-                CuTins[category][setting] = newValue / 100
-                label.Text = name .. ": " .. newValue .. "%"
-            else
-                CuTins[category][setting] = newValue
-                label.Text = name .. ": " .. newValue
+            -- Xử lý đặc biệt cho từng tính năng
+            if feature[2] == "FLY" then
+                toggleFly()
+            elseif feature[2] == "ESP" and not CuTins.ESP.ENABLED then
+                cleanupESP()
             end
-            
-            fill.Size = UDim2.new(relativeX, 0, 1, 0)
-            button.Position = UDim2.new(relativeX, -8, 0.5, -8)
-        end
+        end)
+    end
+
+    -- SLIDER CHO FOV
+    local fovSlider = Instance.new("Frame")
+    fovSlider.Size = UDim2.new(1, 0, 0, 60)
+    fovSlider.Position = UDim2.new(0, 0, 0, 330)
+    fovSlider.BackgroundTransparency = 1
+    fovSlider.Parent = Content
+
+    local fovLabel = Instance.new("TextLabel")
+    fovLabel.Size = UDim2.new(1, 0, 0, 25)
+    fovLabel.BackgroundTransparency = 1
+    fovLabel.Text = "AIMBOT FOV: " .. CuTins.AIMBOT.FOV
+    fovLabel.TextColor3 = Color3.white
+    fovLabel.TextSize = 13
+    fovLabel.Font = Enum.Font.Gotham
+    fovLabel.Parent = fovSlider
+
+    local fovTrack = Instance.new("Frame")
+    fovTrack.Size = UDim2.new(1, 0, 0, 6)
+    fovTrack.Position = UDim2.new(0, 0, 0, 35)
+    fovTrack.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    fovTrack.Parent = fovSlider
+
+    local fovFill = Instance.new("Frame")
+    fovFill.Size = UDim2.new((CuTins.AIMBOT.FOV - 10) / 190, 0, 1, 0)
+    fovFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    fovFill.Parent = fovTrack
+
+    local fovButton = Instance.new("TextButton")
+    fovButton.Size = UDim2.new(0, 12, 0, 12)
+    fovButton.Position = UDim2.new((CuTins.AIMBOT.FOV - 10) / 190, -6, 0.5, -6)
+    fovButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    fovButton.Text = ""
+    fovButton.Parent = fovTrack
+
+    -- SLIDER CHO HITBOX SIZE
+    local hitboxSlider = Instance.new("Frame")
+    hitboxSlider.Size = UDim2.new(1, 0, 0, 60)
+    hitboxSlider.Position = UDim2.new(0, 0, 0, 400)
+    hitboxSlider.BackgroundTransparency = 1
+    hitboxSlider.Parent = Content
+
+    local hitboxLabel = Instance.new("TextLabel")
+    hitboxLabel.Size = UDim2.new(1, 0, 0, 25)
+    hitboxLabel.BackgroundTransparency = 1
+    hitboxLabel.Text = "HITBOX SIZE: " .. CuTins.HITBOX.SIZE .. "x"
+    hitboxLabel.TextColor3 = Color3.white
+    hitboxLabel.TextSize = 13
+    hitboxLabel.Font = Enum.Font.Gotham
+    hitboxLabel.Parent = hitboxSlider
+
+    local hitboxTrack = Instance.new("Frame")
+    hitboxTrack.Size = UDim2.new(1, 0, 0, 6)
+    hitboxTrack.Position = UDim2.new(0, 0, 0, 35)
+    hitboxTrack.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    hitboxTrack.Parent = hitboxSlider
+
+    local hitboxFill = Instance.new("Frame")
+    hitboxFill.Size = UDim2.new((CuTins.HITBOX.SIZE - 1) / 4, 0, 1, 0)
+    hitboxFill.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+    hitboxFill.Parent = hitboxTrack
+
+    local hitboxButton = Instance.new("TextButton")
+    hitboxButton.Size = UDim2.new(0, 12, 0, 12)
+    hitboxButton.Position = UDim2.new((CuTins.HITBOX.SIZE - 1) / 4, -6, 0.5, -6)
+    hitboxButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    hitboxButton.Text = ""
+    hitboxButton.Parent = hitboxTrack
+
+    -- SỰ KIỆN SLIDER
+    local function setupSlider(button, track, fill, label, min, max, setting, category, isFloat)
+        local dragging = false
+        
+        button.MouseButton1Down:Connect(function()
+            dragging = true
+        end)
+        
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local mousePos = UserInputService:GetMouseLocation()
+                local trackAbsPos = track.AbsolutePosition
+                local trackAbsSize = track.AbsoluteSize
+                
+                local relativeX = (mousePos.X - trackAbsPos.X) / trackAbsSize.X
+                relativeX = math.clamp(relativeX, 0, 1)
+                
+                local newValue
+                if isFloat then
+                    newValue = math.floor((min + (relativeX * (max - min))) * 10) / 10
+                else
+                    newValue = math.floor(min + (relativeX * (max - min)))
+                end
+                
+                CuTins[category][setting] = newValue
+                label.Text = string.upper(setting) .. ": " .. newValue .. (isFloat and "x" : "")
+                
+                fill.Size = UDim2.new(relativeX, 0, 1, 0)
+                button.Position = UDim2.new(relativeX, -6, 0.5, -6)
+            end
+        end)
+    end
+
+    setupSlider(fovButton, fovTrack, fovFill, fovLabel, 10, 200, "FOV", "AIMBOT", false)
+    setupSlider(hitboxButton, hitboxTrack, hitboxFill, hitboxLabel, 1, 5, "SIZE", "HITBOX", true)
+
+    -- SỰ KIỆN ĐÓNG
+    CloseButton.MouseButton1Click:Connect(function()
+        GUI:Destroy()
+        CuTins.ACTIVE = false
     end)
 
-    return sliderFrame
+    return GUI
 end
 
--- ✅ GAME FUNCTIONS (GIỮ NGUYÊN)
-
+-- ✅ HÀM GAME GỐC
 local function getClosestPlayer()
     if not CuTins.AIMBOT.ENABLED then return nil end
     
@@ -333,15 +282,32 @@ local function getClosestPlayer()
     return closest
 end
 
+local function aimAtTarget()
+    if not TARGET or not TARGET.Character then return end
+    
+    local targetPart = TARGET.Character:FindFirstChild("Head") or TARGET.Character:FindFirstChild("HumanoidRootPart")
+    if not targetPart then return end
+    
+    local currentCF = Camera.CFrame
+    local targetPos = targetPart.Position
+    
+    local direction = (targetPos - currentCF.Position).Unit
+    local smoothDirection = currentCF.LookVector:Lerp(direction, CuTins.AIMBOT.SMOOTHING)
+    Camera.CFrame = CFrame.new(currentCF.Position, currentCF.Position + smoothDirection)
+end
+
 local function updateESP()
-    -- Cleanup
+    -- Dọn dẹp ESP cũ
     for player, highlight in pairs(ESP_ITEMS) do
-        if highlight then highlight:Destroy() end
+        if highlight then
+            highlight:Destroy()
+        end
     end
     ESP_ITEMS = {}
     
     if not CuTins.ESP.ENABLED then return end
     
+    -- Tạo ESP mới
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
             if CuTins.ESP.TEAM_CHECK and player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
@@ -360,57 +326,133 @@ local function updateESP()
     end
 end
 
--- ✅ MAIN LOOP
+local function cleanupESP()
+    for player, highlight in pairs(ESP_ITEMS) do
+        if highlight then
+            highlight:Destroy()
+        end
+    end
+    ESP_ITEMS = {}
+end
 
+local function updateHitboxes()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local head = player.Character:FindFirstChild("Head")
+            if head then
+                -- Xóa hitbox cũ
+                local oldHitbox = head:FindFirstChild("CUTINS_HITBOX")
+                if oldHitbox then
+                    oldHitbox:Destroy()
+                end
+                
+                -- Tạo hitbox mới nếu bật
+                if CuTins.HITBOX.ENABLED then
+                    local hitbox = Instance.new("Part")
+                    hitbox.Name = "CUTINS_HITBOX"
+                    hitbox.Size = head.Size * CuTins.HITBOX.SIZE
+                    hitbox.Transparency = 0.7
+                    hitbox.Color = Color3.fromRGB(255, 0, 0)
+                    hitbox.CanCollide = false
+                    hitbox.Anchored = false
+                    hitbox.Parent = head
+                    
+                    local weld = Instance.new("Weld")
+                    weld.Part0 = head
+                    weld.Part1 = hitbox
+                    weld.C0 = CFrame.new()
+                    weld.Parent = hitbox
+                end
+            end
+        end
+    end
+end
+
+local function toggleFly()
+    -- Dọn dẹp fly cũ
+    if BODYGYRO then BODYGYRO:Destroy() end
+    if BODYVELOCITY then BODYVELOCITY:Destroy() end
+    
+    if not CuTins.FLY.ENABLED then return end
+    
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    -- Tạo fly components
+    BODYGYRO = Instance.new("BodyGyro")
+    BODYGYRO.P = 1000
+    BODYGYRO.D = 50
+    BODYGYRO.MaxTorque = Vector3.new(4000, 4000, 4000)
+    BODYGYRO.CFrame = rootPart.CFrame
+    BODYGYRO.Parent = rootPart
+    
+    BODYVELOCITY = Instance.new("BodyVelocity")
+    BODYVELOCITY.Velocity = Vector3.new(0, 0, 0)
+    BODYVELOCITY.MaxForce = Vector3.new(4000, 4000, 4000)
+    BODYVELOCITY.Parent = rootPart
+end
+
+-- ✅ VÒNG LẶP CHÍNH
 RunService.Heartbeat:Connect(function()
     -- Aimbot
     if CuTins.AIMBOT.ENABLED and TARGET then
-        local targetPart = TARGET.Character:FindFirstChild("Head") or TARGET.Character:FindFirstChild("HumanoidRootPart")
-        if targetPart then
-            local currentCF = Camera.CFrame
-            local targetPos = targetPart.Position
-            local direction = (targetPos - currentCF.Position).Unit
-            local smoothDirection = currentCF.LookVector:Lerp(direction, CuTins.AIMBOT.SMOOTHING)
-            Camera.CFrame = CFrame.new(currentCF.Position, currentCF.Position + smoothDirection)
-        end
+        aimAtTarget()
     end
     
     -- ESP
     updateESP()
     
-    -- Movement
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        local humanoid = LocalPlayer.Character.Humanoid
-        humanoid.WalkSpeed = CuTins.MOVEMENT.SPEED and CuTins.MOVEMENT.SPEED_VALUE or 16
-        humanoid.JumpPower = CuTins.MOVEMENT.JUMP and CuTins.MOVEMENT.JUMP_VALUE or 50
-    end
+    -- Hitbox
+    updateHitboxes()
     
-    -- Triggerbot
-    if CuTins.AIMBOT.TRIGGERBOT and CuTins.AIMBOT.ENABLED then
-        local target = getClosestPlayer()
-        if target then
-            wait(0.1)
-            mouse1click()
+    -- Fly controls
+    if CuTins.FLY.ENABLED and BODYVELOCITY then
+        local character = LocalPlayer.Character
+        if character then
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local moveDirection = Vector3.new(0, 0, 0)
+                
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    moveDirection = moveDirection + rootPart.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    moveDirection = moveDirection - rootPart.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    moveDirection = moveDirection - rootPart.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    moveDirection = moveDirection + rootPart.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    moveDirection = moveDirection + Vector3.new(0, 1, 0)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                    moveDirection = moveDirection + Vector3.new(0, -1, 0)
+                end
+                
+                BODYVELOCITY.Velocity = moveDirection * CuTins.FLY.SPEED * 10
+            end
         end
     end
 end)
 
--- ✅ INPUT HANDLING
-
+-- ✅ XỬ LÝ INPUT
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
+    -- Aimbot với chuột trái
     if input.UserInputType == Enum.UserInputType.MouseButton1 and CuTins.AIMBOT.ENABLED then
         TARGET = getClosestPlayer()
     end
     
-    -- Toggle menu với Insert key
+    -- Toggle GUI với Insert
     if input.KeyCode == Enum.KeyCode.Insert then
-        if SCREEN_GUI then
-            SCREEN_GUI.Enabled = not SCREEN_GUI.Enabled
-        else
-            createFixedMenu()
-        end
+        createOriginalGUI()
     end
 end)
 
@@ -422,9 +464,8 @@ UserInputService.InputEnded:Connect(function(input, processed)
     end
 end)
 
--- ✅ INITIALIZE
-
-createFixedMenu()
+-- ✅ KHỞI TẠO
+local GUI = createOriginalGUI()
 
 print([[
  
@@ -436,13 +477,16 @@ print([[
                                                  
         Menu Hack - CuTins © 2025
 
-✅ MENU ĐÃ HIỂN THỊ ĐẦY ĐỦ TÍNH NĂNG!
+✅ GUI GỐC ĐÃ ĐƯỢC KHÔI PHỤC!
 
 ]])
 
--- Auto cleanup
+-- Dọn dẹp khi thoát
 game:GetService("Players").PlayerRemoving:Connect(function(player)
-    if player == LocalPlayer and SCREEN_GUI then
-        SCREEN_GUI:Destroy()
+    if player == LocalPlayer then
+        CuTins.ACTIVE = false
+        if BODYGYRO then BODYGYRO:Destroy() end
+        if BODYVELOCITY then BODYVELOCITY:Destroy() end
+        cleanupESP()
     end
 end)
